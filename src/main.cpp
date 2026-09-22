@@ -1,7 +1,7 @@
 #include "Superman.h"
 
-#include "ScriptHookV/main.h"
-#include "ScriptHookV/natives.h"
+#include "main.h"
+#include "natives.h"
 
 #include <windows.h>
 
@@ -63,7 +63,7 @@ static void UpdateControls()
         );
     }
 
-    // SHIFT — Boost
+    // Left Shift — Boost
     g_superman.abilities.state.boost =
         (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
 
