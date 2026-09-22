@@ -25,6 +25,48 @@
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>bin\</OutDir>
+    <IntDir>obj\</IntDir>
+    <TargetName>Superman</TargetName>
+    <TargetExt>.asi</TargetExt>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)include;
+        $(ProjectDir)include\ScriptHookV;
+        $(ProjectDir)src;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+
+    <Link>
+      <AdditionalLibraryDirectories>
+        $(ProjectDir)include;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+
+      <AdditionalDependencies>
+        ScriptHookV.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+
+      <LinkIncremental>false</LinkIncremental>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+
+  </ItemDefinitionGroup>
+
   <ItemGroup>
     <ClInclude Include="src\Physics.h" />
     <ClInclude Include="src\Abilities.h" />
@@ -41,39 +83,6 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Superman.cpp" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Library Include="include\ScriptHookV.lib" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-
-    <OutDir>bin\</OutDir>
-    <IntDir>obj\</IntDir>
-
-    <TargetName>Superman</TargetName>
-    <TargetExt>.asi</TargetExt>
-
-    <AdditionalIncludeDirectories>
-      $(ProjectDir)include;
-      $(ProjectDir)include\ScriptHookV;
-      $(ProjectDir)src;
-      %(AdditionalIncludeDirectories)
-    </AdditionalIncludeDirectories>
-
-    <AdditionalLibraryDirectories>
-      $(ProjectDir)include;
-      %(AdditionalLibraryDirectories)
-    </AdditionalLibraryDirectories>
-
-    <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-    <LanguageStandard>stdcpp17</LanguageStandard>
-
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <LinkIncremental>false</LinkIncremental>
-    <GenerateDebugInformation>false</GenerateDebugInformation>
-
-  </PropertyGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 
