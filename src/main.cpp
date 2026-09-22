@@ -10,9 +10,9 @@ static void Notify(const char* text)
     OutputDebugStringA("\n");
 }
 
-static void SupermanScript()
+void main()
 {
-    Notify("SUPERMAN SCRIPT STARTED");
+    Notify("SUPERMAN MAIN STARTED");
 
     while (true)
     {
@@ -28,22 +28,4 @@ static void SupermanScript()
 
         WAIT(0);
     }
-}
-
-BOOL WINAPI DllMain(
-    HMODULE hModule,
-    DWORD reason,
-    LPVOID reserved)
-{
-    if (reason == DLL_PROCESS_ATTACH)
-    {
-        DisableThreadLibraryCalls(hModule);
-
-        scriptRegister(
-            hModule,
-            SupermanScript
-        );
-    }
-
-    return TRUE;
 }
