@@ -28,7 +28,7 @@ void ShowNotification(const char* text)
 void UpdateControls()
 {
     // F3 — Superman ON/OFF
-    if (KeyPressed(VK_F3))
+    if (KeyPressed(VK_F5))
     {
         g_superman.enabled = !g_superman.enabled;
 
