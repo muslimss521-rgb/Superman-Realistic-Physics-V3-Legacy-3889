@@ -1,4 +1,8 @@
 #include "Superman.h"
+
+#include "ScriptHookV/main.h"
+#include "ScriptHookV/natives.h"
+
 #include <windows.h>
 
 static SupermanController g_superman;
@@ -18,28 +22,28 @@ static bool KeyPressed(int key)
     return pressed;
 }
 
-void ShowNotification(const char* text)
+static void Notify(const char* text)
 {
     OutputDebugStringA("[SUPERMAN] ");
     OutputDebugStringA(text);
     OutputDebugStringA("\n");
 }
 
-void UpdateControls()
+static void UpdateControls()
 {
     // F5 — Superman ON/OFF
     if (KeyPressed(VK_F5))
     {
         g_superman.enabled = !g_superman.enabled;
 
-        if (!g_superman.enabled)
+        if (g_superman.enabled)
         {
-            g_superman.Reset();
-            ShowNotification("Superman OFF");
+            Notify("SUPERMAN ON");
         }
         else
         {
-            ShowNotification("Superman ON");
+            g_superman.Reset();
+            Notify("SUPERMAN OFF");
         }
     }
 
@@ -52,14 +56,14 @@ void UpdateControls()
         g_superman.abilities.state.flight =
             !g_superman.abilities.state.flight;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.flight
-                ? "Flight ON"
-                : "Flight OFF"
+                ? "FLIGHT ON"
+                : "FLIGHT OFF"
         );
     }
 
-    // Left Shift — Boost
+    // SHIFT — Boost
     g_superman.abilities.state.boost =
         (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
 
@@ -69,10 +73,10 @@ void UpdateControls()
         g_superman.abilities.state.superSpeed =
             !g_superman.abilities.state.superSpeed;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.superSpeed
-                ? "Super Speed ON"
-                : "Super Speed OFF"
+                ? "SUPER SPEED ON"
+                : "SUPER SPEED OFF"
         );
     }
 
@@ -82,10 +86,10 @@ void UpdateControls()
         g_superman.abilities.state.heatVision =
             !g_superman.abilities.state.heatVision;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.heatVision
-                ? "Heat Vision ON"
-                : "Heat Vision OFF"
+                ? "HEAT VISION ON"
+                : "HEAT VISION OFF"
         );
     }
 
@@ -95,10 +99,10 @@ void UpdateControls()
         g_superman.abilities.state.freezeBreath =
             !g_superman.abilities.state.freezeBreath;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.freezeBreath
-                ? "Freeze Breath ON"
-                : "Freeze Breath OFF"
+                ? "FREEZE BREATH ON"
+                : "FREEZE BREATH OFF"
         );
     }
 
@@ -108,10 +112,10 @@ void UpdateControls()
         g_superman.abilities.state.superBreath =
             !g_superman.abilities.state.superBreath;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.superBreath
-                ? "Super Breath ON"
-                : "Super Breath OFF"
+                ? "SUPER BREATH ON"
+                : "SUPER BREATH OFF"
         );
     }
 
@@ -121,10 +125,10 @@ void UpdateControls()
         g_superman.abilities.state.bulletTime =
             !g_superman.abilities.state.bulletTime;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.bulletTime
-                ? "Bullet Time ON"
-                : "Bullet Time OFF"
+                ? "BULLET TIME ON"
+                : "BULLET TIME OFF"
         );
     }
 
@@ -134,37 +138,50 @@ void UpdateControls()
         g_superman.abilities.state.grabbing =
             !g_superman.abilities.state.grabbing;
 
-        ShowNotification(
+        Notify(
             g_superman.abilities.state.grabbing
-                ? "Grab ON"
-                : "Grab OFF"
+                ? "GRAB ON"
+                : "GRAB OFF"
         );
     }
 }
 
-// ScriptHookV ASI entry point
-void main()
+static void Tick()
 {
-    ShowNotification("Superman ASI started!");
+    static ULONGLONG lastTime = GetTickCount64();
 
-    ULONGLONG lastTime = GetTickCount64();
+    ULONGLONG currentTime = GetTickCount64();
+
+    float dt =
+        static_cast<float>(currentTime - lastTime) /
+        1000.0f;
+
+    lastTime = currentTime;
+
+    if (dt > 0.1f)
+        dt = 0.1f;
+
+    UpdateControls();
+
+    g_superman.Tick(dt);
+}
+
+void ScriptMain()
+{
+    Notify("SUPERMAN ASI STARTED");
 
     while (true)
     {
-        ULONGLONG currentTime = GetTickCount64();
+        Tick();
 
-        float dt =
-            static_cast<float>(currentTime - lastTime) / 1000.0f;
-
-        lastTime = currentTime;
-
-        if (dt > 0.1f)
-            dt = 0.1f;
-
-        UpdateControls();
-
-        g_superman.Tick(dt);
-
-        Sleep(10);
+        WAIT(0);
     }
+}
+
+BOOL APIENTRY DllMain(
+    HMODULE hModule,
+    DWORD ul_reason_for_call,
+    LPVOID lpReserved)
+{
+    return TRUE;
 }
