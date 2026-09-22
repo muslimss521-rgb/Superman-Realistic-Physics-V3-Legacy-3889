@@ -6,7 +6,7 @@ static SupermanController g_superman;
 static bool KeyPressed(int key)
 {
     static SHORT previous[256] = {};
-    
+
     SHORT current = GetAsyncKeyState(key);
 
     bool pressed =
@@ -27,7 +27,7 @@ void ShowNotification(const char* text)
 
 void UpdateControls()
 {
-    // F3 — Superman ON/OFF
+    // F5 — Superman ON/OFF
     if (KeyPressed(VK_F5))
     {
         g_superman.enabled = !g_superman.enabled;
@@ -43,7 +43,6 @@ void UpdateControls()
         }
     }
 
-    // Если Superman выключен — остальные клавиши ничего не делают.
     if (!g_superman.enabled)
         return;
 
@@ -55,20 +54,14 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.flight
-            ? "Flight ON"
-            : "Flight OFF"
+                ? "Flight ON"
+                : "Flight OFF"
         );
     }
 
     // Left Shift — Boost
-    if (GetAsyncKeyState(VK_LSHIFT) & 0x8000)
-    {
-        g_superman.abilities.state.boost = true;
-    }
-    else
-    {
-        g_superman.abilities.state.boost = false;
-    }
+    g_superman.abilities.state.boost =
+        (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
 
     // G — Super Speed
     if (KeyPressed('G'))
@@ -78,8 +71,8 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.superSpeed
-            ? "Super Speed ON"
-            : "Super Speed OFF"
+                ? "Super Speed ON"
+                : "Super Speed OFF"
         );
     }
 
@@ -91,8 +84,8 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.heatVision
-            ? "Heat Vision ON"
-            : "Heat Vision OFF"
+                ? "Heat Vision ON"
+                : "Heat Vision OFF"
         );
     }
 
@@ -104,8 +97,8 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.freezeBreath
-            ? "Freeze Breath ON"
-            : "Freeze Breath OFF"
+                ? "Freeze Breath ON"
+                : "Freeze Breath OFF"
         );
     }
 
@@ -117,8 +110,8 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.superBreath
-            ? "Super Breath ON"
-            : "Super Breath OFF"
+                ? "Super Breath ON"
+                : "Super Breath OFF"
         );
     }
 
@@ -130,8 +123,8 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.bulletTime
-            ? "Bullet Time ON"
-            : "Bullet Time OFF"
+                ? "Bullet Time ON"
+                : "Bullet Time OFF"
         );
     }
 
@@ -143,37 +136,35 @@ void UpdateControls()
 
         ShowNotification(
             g_superman.abilities.state.grabbing
-            ? "Grab ON"
-            : "Grab OFF"
+                ? "Grab ON"
+                : "Grab OFF"
         );
     }
 }
 
-void SupermanMain()
+// ScriptHookV ASI entry point
+void main()
 {
-    static bool initialized = false;
-    static ULONGLONG lastTime = 0;
+    ShowNotification("Superman ASI started!");
 
-    if (!initialized)
+    ULONGLONG lastTime = GetTickCount64();
+
+    while (true)
     {
-        initialized = true;
-        lastTime = GetTickCount64();
+        ULONGLONG currentTime = GetTickCount64();
 
-        ShowNotification("Superman mod loaded!");
+        float dt =
+            static_cast<float>(currentTime - lastTime) / 1000.0f;
+
+        lastTime = currentTime;
+
+        if (dt > 0.1f)
+            dt = 0.1f;
+
+        UpdateControls();
+
+        g_superman.Tick(dt);
+
+        Sleep(10);
     }
-
-    ULONGLONG currentTime = GetTickCount64();
-
-    float dt =
-        static_cast<float>(currentTime - lastTime) / 1000.0f;
-
-    lastTime = currentTime;
-
-    // Защита от слишком большого скачка времени.
-    if (dt > 0.1f)
-        dt = 0.1f;
-
-    UpdateControls();
-
-    g_superman.Tick(dt);
 }
