@@ -1,24 +1,35 @@
 name: Build Superman ASI
+
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Build
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Superman
         shell: cmd
         run: msbuild Superman.vcxproj /p:Configuration=Release /p:Platform=x64
-      - name: Package
+
+      - name: Prepare artifact
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path artifact | Out-Null
-          Copy-Item bin/Superman.asi artifact/Superman.asi
-          Copy-Item config/Superman.ini artifact/Superman.ini
-      - uses: actions/upload-artifact@v4
+          New-Item -ItemType Directory -Force -Path artifact
+          Copy-Item bin\Superman.asi artifact\Superman.asi
+          Copy-Item config\Superman.ini artifact\Superman.ini
+
+      - name: Upload Superman ASI
+        uses: actions/upload-artifact@v4
         with:
           name: Superman-Realistic-Physics-V3-Legacy-3889
-          path: artifact/
+          path: artifact
