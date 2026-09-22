@@ -1,5 +1,5 @@
 #include <windows.h>
-#include "ScriptHookV/main.h"
+#include "../include/ScriptHookV/main.h"
 #include "Superman.h"
 
 static SupermanController g_superman;
