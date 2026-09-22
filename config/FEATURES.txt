@@ -1,0 +1,34 @@
+REALISTIC PHYSICS V3
+====================
+
+Core:
+- mass
+- velocity
+- acceleration
+- momentum
+- kinetic energy
+- impulse
+- aerodynamic drag
+- gravity
+- impact force
+- impact damage
+
+Abilities planned/structured:
+- realistic flight / hover / boost
+- super speed
+- strength / punch impulse
+- grab / throw
+- ground pound
+- heat vision
+- freeze breath
+- super breath
+- bullet-time
+- senses
+- custom camera
+- costume system
+- audio system
+- configurable controls
+
+The current ZIP is a buildable foundation. GTA-specific native calls, animation assets,
+PED switching and particle/audio assets must be integrated with the licensed/available
+ScriptHookV SDK and user-owned mod assets.
