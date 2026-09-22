@@ -54,7 +54,99 @@ static void UpdateControls()
         g_superman.abilities.state.flight =
             !g_superman.abilities.state.flight;
 
-        Notify(
-            g_superman.abilities.state.flight
-                ? "FLIGHT ON"
-                : "FLIGHT OFF"
+        if (g_superman.abilities.state.flight)
+            Notify("FLIGHT ON");
+        else
+            Notify("FLIGHT OFF");
+    }
+
+    // Left Shift — Boost
+    g_superman.abilities.state.boost =
+        (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
+
+    // G — Super Speed
+    if (KeyPressed('G'))
+    {
+        g_superman.abilities.state.superSpeed =
+            !g_superman.abilities.state.superSpeed;
+
+        if (g_superman.abilities.state.superSpeed)
+            Notify("SUPER SPEED ON");
+        else
+            Notify("SUPER SPEED OFF");
+    }
+
+    // H — Heat Vision
+    if (KeyPressed('H'))
+    {
+        g_superman.abilities.state.heatVision =
+            !g_superman.abilities.state.heatVision;
+
+        if (g_superman.abilities.state.heatVision)
+            Notify("HEAT VISION ON");
+        else
+            Notify("HEAT VISION OFF");
+    }
+
+    // J — Freeze Breath
+    if (KeyPressed('J'))
+    {
+        g_superman.abilities.state.freezeBreath =
+            !g_superman.abilities.state.freezeBreath;
+
+        if (g_superman.abilities.state.freezeBreath)
+            Notify("FREEZE BREATH ON");
+        else
+            Notify("FREEZE BREATH OFF");
+    }
+
+    // K — Super Breath
+    if (KeyPressed('K'))
+    {
+        g_superman.abilities.state.superBreath =
+            !g_superman.abilities.state.superBreath;
+
+        if (g_superman.abilities.state.superBreath)
+            Notify("SUPER BREATH ON");
+        else
+            Notify("SUPER BREATH OFF");
+    }
+
+    // B — Bullet Time
+    if (KeyPressed('B'))
+    {
+        g_superman.abilities.state.bulletTime =
+            !g_superman.abilities.state.bulletTime;
+
+        if (g_superman.abilities.state.bulletTime)
+            Notify("BULLET TIME ON");
+        else
+            Notify("BULLET TIME OFF");
+    }
+
+    // E — Grab
+    if (KeyPressed('E'))
+    {
+        g_superman.abilities.state.grabbing =
+            !g_superman.abilities.state.grabbing;
+
+        if (g_superman.abilities.state.grabbing)
+            Notify("GRAB ON");
+        else
+            Notify("GRAB OFF");
+    }
+}
+
+void ScriptMain()
+{
+    Notify("SUPERMAN ASI STARTED");
+
+    while (true)
+    {
+        UpdateControls();
+
+        g_superman.Tick(0.016f);
+
+        WAIT(0);
+    }
+}
