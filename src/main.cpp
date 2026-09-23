@@ -260,16 +260,88 @@ static void UpdateFlight(Ped ped)
     Vector3 forward =
         ENTITY::GET_ENTITY_FORWARD_VECTOR(ped);
 
+    float forwardInput = 0.0f;
+    float sideInput = 0.0f;
+    float verticalInput = 0.0f;
+
+    if (GetAsyncKeyState('W') & 0x8000)
+        forwardInput += 1.0f;
+
+    if (GetAsyncKeyState('S') & 0x8000)
+        forwardInput -= 1.0f;
+
+    if (GetAsyncKeyState('D') & 0x8000)
+        sideInput += 1.0f;
+
+    if (GetAsyncKeyState('A') & 0x8000)
+        sideInput -= 1.0f;
+
+    if (GetAsyncKeyState(VK_SPACE) & 0x8000)
+        verticalInput += 1.0f;
+
+    if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
+        verticalInput -= 1.0f;
+
+    bool boostHeld =
+        (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+
     float speed =
         g_superman.abilities.state.boost
         ? g_superman.boostSpeed
         : g_superman.flightSpeed;
 
+    if (boostHeld)
+        speed = g_superman.boostSpeed;
+
+    Vector3 right(
+        -forward.y,
+        forward.x,
+        0.0f
+    );
+
+    float rightLength =
+        std::sqrt(
+            right.x * right.x +
+            right.y * right.y
+        );
+
+    if (rightLength > 0.001f)
+    {
+        right.x /= rightLength;
+        right.y /= rightLength;
+    }
+
+    float horizontalLength =
+        std::sqrt(
+            forward.x * forward.x +
+            forward.y * forward.y
+        );
+
+    if (horizontalLength > 0.001f)
+    {
+        forward.x /= horizontalLength;
+        forward.y /= horizontalLength;
+        forward.z = 0.0f;
+    }
+
+    float vx =
+        forward.x * forwardInput * speed +
+        right.x * sideInput * speed;
+
+    float vy =
+        forward.y * forwardInput * speed +
+        right.y * sideInput * speed;
+
+    float vz =
+        verticalInput * speed;
+
+    ENTITY::SET_ENTITY_HAS_GRAVITY(ped, false);
+
     ENTITY::SET_ENTITY_VELOCITY(
         ped,
-        forward.x * speed,
-        forward.y * speed,
-        forward.z * speed
+        vx,
+        vy,
+        vz
     );
 }
 
