@@ -19,6 +19,9 @@ void SupermanMain()
         {
             g_superman.enabled = !g_superman.enabled;
 
+            Player player = PLAYER::PLAYER_ID();
+            Ped ped = PLAYER::PLAYER_PED_ID();
+
             if (g_superman.enabled)
             {
                 g_superman.abilities.state.flight = true;
@@ -27,39 +30,39 @@ void SupermanMain()
                 g_superman.abilities.state.heatVision = true;
                 g_superman.abilities.state.freezeBreath = true;
                 g_superman.abilities.state.superBreath = true;
-                g_superman.abilities.state.boost = false;
+
+                ENTITY::SET_ENTITY_INVINCIBLE(
+                    ped,
+                    true
+                );
+
+                PLAYER::SET_PLAYER_INVINCIBLE(
+                    player,
+                    true
+                );
+
+                HUD::SET_NOTIFICATION_TEXT_ENTRY("STRING");
+                HUD::ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(
+                    "SUPERMAN ON"
+                );
+                HUD::DRAW_NOTIFICATION(
+                    false,
+                    false
+                );
             }
             else
             {
                 g_superman.Reset();
-            }
-        }
 
-        lastF5 = f5;
+                ENTITY::SET_ENTITY_INVINCIBLE(
+                    ped,
+                    false
+                );
 
-        if (g_superman.enabled)
-        {
-            g_superman.Tick(0.016f);
-        }
+                PLAYER::SET_PLAYER_INVINCIBLE(
+                    player,
+                    false
+                );
 
-        scriptWait(0);
-    }
-}
-
-BOOL APIENTRY DllMain(
-    HMODULE hModule,
-    DWORD reason,
-    LPVOID)
-{
-    if (reason == DLL_PROCESS_ATTACH)
-    {
-        DisableThreadLibraryCalls(hModule);
-        scriptRegister(hModule, SupermanMain);
-    }
-    else if (reason == DLL_PROCESS_DETACH)
-    {
-        scriptUnregister(hModule);
-    }
-
-    return TRUE;
-}
+                HUD::SET_NOTIFICATION_TEXT_ENTRY("STRING");
+                HUD
