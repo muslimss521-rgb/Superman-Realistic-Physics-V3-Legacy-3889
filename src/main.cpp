@@ -340,7 +340,7 @@ static void UpdateFlight(Ped ped)
         acceleration = 1.0f;
 
     float blend =
-        acceleration * dt / std::max(maxSpeed, 1.0f);
+        acceleration * dt / (maxSpeed > 1.0f ? maxSpeed : 1.0f);
 
     if (blend > 1.0f)
         blend = 1.0f;
