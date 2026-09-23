@@ -1,44 +1,34 @@
-SUPERMAN REALISTIC PHYSICS V4
-=============================
+REALISTIC PHYSICS V3
+====================
 
-Implemented in this build:
-- stable camera-directed flight
-- real frame-time acceleration/braking
-- hover with inertial damping
-- boost flight
-- upright stable orientation / heading steering
+Core:
+- mass
+- velocity
+- acceleration
+- momentum
+- kinetic energy
+- impulse
+- aerodynamic drag
+- gravity
+- impact force
+- impact damage
+
+Abilities planned/structured:
+- realistic flight / hover / boost
 - super speed
-- super jump
-- invincibility
-- heat-vision ray damage
-- freeze-breath hold/freeze effect
-- super-breath directional force
-- super-strength punch impulse + damage/ragdoll
-- ground-pound descent + impact shockwave
-- grab / hold / throw
-- bullet time
-- super senses (see-through + night vision)
-- centralized F3 menu and direct keyboard controls
-- physics helpers: mass, drag, momentum, kinetic energy, impulse, impact energy
+- strength / punch impulse
+- grab / throw
+- ground pound
+- heat vision
+- freeze breath
+- super breath
+- bullet-time
+- senses
+- custom camera
+- costume system
+- audio system
+- configurable controls
 
-Controls:
-F3 = menu
-F = flight
-LShift = hold boost (menu Boost can also lock boost on)
-H = heat vision
-J = freeze breath
-K = super breath
-R = super punch
-V = ground pound
-E = grab / hold
-Q = throw
-B = bullet time
-X = senses
-W/S/A/D = flight direction
-Space/Ctrl = vertical flight
-
-Notes:
-- This version uses only the supplied ScriptHookV SDK and native GTA V calls.
-- Costume/PED models, custom animation packs, custom audio and custom particle assets are
-  intentionally not embedded because they require user-owned/available assets.
-- The powers above are implemented gameplay systems, not menu-only boolean placeholders.
+The current ZIP is a buildable foundation. GTA-specific native calls, animation assets,
+PED switching and particle/audio assets must be integrated with the licensed/available
+ScriptHookV SDK and user-owned mod assets.
