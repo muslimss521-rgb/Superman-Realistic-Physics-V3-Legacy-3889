@@ -141,13 +141,40 @@ static void ToggleBulletTime(){
 
 static void HeatVision(Ped ped,float dt){
     if(!g_superman.abilities.state.heatVision || !g_superman.enabled) return;
-    Vector3 forward,right; CameraBasis(forward,right);
+
+    Vector3 forward,right;
+    CameraBasis(forward,right);
+
     Vector3 start=CAM::GET_GAMEPLAY_CAM_COORD();
     Vector3 end=Add(start,Mul(forward,150.0f));
-    // Concentrated ray effect: fast projectile line with controlled damage.
-    static const Hash WEAPON_PISTOL_HASH=0x1B06D571;
-    WEAPON::SHOOT_SINGLE_BULLET_BETWEEN_COORDS(start.x,start.y,start.z,end.x,end.y,end.z,18,false,WEAPON_PISTOL_HASH,ped,false,true,1200.0f);
-    (void)dt;
+
+    // Visual beam. We deliberately avoid weapon natives because this
+    // Legacy SDK does not expose SHOOT_SINGLE_BULLET_BETWEEN_COORDS.
+    GRAPHICS::DRAW_LINE(
+        start.x,start.y,start.z,
+        end.x,end.y,end.z,
+        255,40,20,220
+    );
+
+    // Apply the effect to a nearby target that is actually in the beam.
+    Ped target=FindTarget(ped,35.0f);
+    if(!target) return;
+
+    Vector3 tp=ENTITY::GET_ENTITY_COORDS(target,true);
+    Vector3 from=MakeVec(tp.x-start.x,tp.y-start.y,tp.z-start.z);
+    float distance=Length3(from);
+    if(distance>35.0f || distance<=0.001f) return;
+
+    Vector3 toTarget=Normalize3(from);
+    float alignment=Dot(forward,toTarget);
+    if(alignment<0.96f) return;
+
+    float damagePerSecond=55.0f;
+    int damage=(int)(damagePerSecond*dt);
+    if(damage<1) damage=1;
+
+    DamageAndRagdoll(target,damage,120);
+    ApplyDirectionalForce(target,forward,12.0f*dt*60.0f);
 }
 
 static void FreezeBreath(Ped ped,float dt){
