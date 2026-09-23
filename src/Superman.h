@@ -24,13 +24,13 @@ public:
     void Reset()
     {
         enabled = false;
+
         velocity = {};
         angularVelocity = {};
+
         abilities.state = {};
     }
 
-    // Declaration only.
-    // The implementation is in src/Superman.cpp.
     void Tick(float dt);
 
     float CurrentSpeed() const
