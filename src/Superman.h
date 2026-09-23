@@ -6,32 +6,43 @@
 class SupermanController
 {
 public:
-    bool enabled=false;
-    float mass=95.0f;
-    float flightSpeed=85.0f;
-    float boostSpeed=240.0f;
-    float acceleration=45.0f;
-    float boostAcceleration=110.0f;
+    bool enabled = false;
+
+    float mass = 95.0f;
+
+    float flightSpeed = 85.0f;
+    float boostSpeed = 240.0f;
+
+    float acceleration = 45.0f;
+    float boostAcceleration = 110.0f;
+
     Vec3 velocity{};
     Vec3 angularVelocity{};
+
     AbilitySystem abilities;
 
     void Reset()
     {
-        enabled=false;
-        velocity=Vec3();
-        angularVelocity=Vec3();
-        abilities.state=AbilityState();
+        enabled = false;
+        velocity = {};
+        angularVelocity = {};
+        abilities.state = {};
     }
 
-    void Tick(float dt)
+    // Declaration only.
+    // The implementation is in src/Superman.cpp.
+    void Tick(float dt);
+
+    float CurrentSpeed() const
     {
-        if(!enabled || dt<=0.0f) return;
-        float maxSpeed=abilities.state.boost?boostSpeed:flightSpeed;
-        float speed=velocity.Length();
-        if(speed>maxSpeed) velocity=velocity.Normalized()*maxSpeed;
+        return velocity.Length();
     }
 
-    float CurrentSpeed() const { return velocity.Length(); }
-    float CurrentKineticEnergy() const { return Physics::KineticEnergy(mass,CurrentSpeed()); }
+    float CurrentKineticEnergy() const
+    {
+        return Physics::KineticEnergy(
+            mass,
+            CurrentSpeed()
+        );
+    }
 };
