@@ -257,10 +257,34 @@ static void UpdateFlight(Ped ped)
     if (!g_superman.abilities.state.flight)
         return;
 
+    // Camera-directed flight.
+    // W/S = forward/back, A/D = strafe, SPACE/CTRL = up/down.
+    // If no movement key is held, Superman keeps his current velocity
+    // and gradually slows instead of being snapped to zero.
+
     const float dt = 0.016f;
 
-    Vector3 forward =
-        ENTITY::GET_ENTITY_FORWARD_VECTOR(ped);
+    Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
+
+    const float degToRad = 0.017453292519943295f;
+
+    float pitch = camRot.x * degToRad;
+    float yaw   = camRot.z * degToRad;
+
+    float cp = std::cos(pitch);
+    float sp = std::sin(pitch);
+    float sy = std::sin(yaw);
+    float cy = std::cos(yaw);
+
+    Vector3 forward;
+    forward.x = -sy * cp;
+    forward.y =  cy * cp;
+    forward.z =  sp;
+
+    Vector3 right;
+    right.x = cy;
+    right.y = sy;
+    right.z = 0.0f;
 
     float forwardInput = 0.0f;
     float sideInput = 0.0f;
@@ -268,106 +292,104 @@ static void UpdateFlight(Ped ped)
 
     if (GetAsyncKeyState('W') & 0x8000)
         forwardInput += 1.0f;
+
     if (GetAsyncKeyState('S') & 0x8000)
         forwardInput -= 1.0f;
+
     if (GetAsyncKeyState('D') & 0x8000)
         sideInput += 1.0f;
+
     if (GetAsyncKeyState('A') & 0x8000)
         sideInput -= 1.0f;
+
     if (GetAsyncKeyState(VK_SPACE) & 0x8000)
         verticalInput += 1.0f;
+
     if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
         verticalInput -= 1.0f;
 
     bool boostHeld =
         (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
+    if (g_superman.abilities.state.boost)
+        boostHeld = true;
+
     float maxSpeed =
         boostHeld
         ? g_superman.boostSpeed
         : g_superman.flightSpeed;
 
-    float forwardLength =
-        std::sqrt(
-            forward.x * forward.x +
-            forward.y * forward.y
-        );
-
-    if (forwardLength <= 0.001f)
-        return;
-
-    forward.x /= forwardLength;
-    forward.y /= forwardLength;
-    forward.z = 0.0f;
-
-    Vector3 right;
-    right.x = -forward.y;
-    right.y = forward.x;
-    right.z = 0.0f;
+    if (maxSpeed < 1.0f)
+        maxSpeed = 1.0f;
 
     float inputLength =
         std::sqrt(
             forwardInput * forwardInput +
-            sideInput * sideInput
+            sideInput * sideInput +
+            verticalInput * verticalInput
         );
 
     if (inputLength > 1.0f)
     {
         forwardInput /= inputLength;
         sideInput /= inputLength;
+        verticalInput /= inputLength;
     }
 
-    float targetX =
+    Vector3 target;
+    target.x =
         forward.x * forwardInput * maxSpeed +
-        right.x * sideInput * maxSpeed;
+        right.x   * sideInput    * maxSpeed;
 
-    float targetY =
+    target.y =
         forward.y * forwardInput * maxSpeed +
-        right.y * sideInput * maxSpeed;
+        right.y   * sideInput    * maxSpeed;
 
-    float targetZ =
+    target.z =
+        forward.z * forwardInput * maxSpeed +
         verticalInput * maxSpeed;
 
     Vector3 current =
         ENTITY::GET_ENTITY_VELOCITY(ped);
 
+    // Strong, visible acceleration instead of the previous very small blend.
     float acceleration =
         boostHeld
         ? g_superman.boostAcceleration
         : g_superman.acceleration;
 
-    if (acceleration < 1.0f)
-        acceleration = 1.0f;
+    if (acceleration < 5.0f)
+        acceleration = 5.0f;
 
-    float blend =
-        acceleration * dt / (maxSpeed > 1.0f ? maxSpeed : 1.0f);
+    float change = acceleration * dt;
 
-    if (blend > 1.0f)
-        blend = 1.0f;
+    float dx = target.x - current.x;
+    float dy = target.y - current.y;
+    float dz = target.z - current.z;
 
-    float nextX =
-        current.x +
-        (targetX - current.x) * blend;
+    float difference =
+        std::sqrt(dx * dx + dy * dy + dz * dz);
 
-    float nextY =
-        current.y +
-        (targetY - current.y) * blend;
+    if (difference > change && difference > 0.001f)
+    {
+        float scale = change / difference;
+        dx *= scale;
+        dy *= scale;
+        dz *= scale;
+    }
 
-    float nextZ =
-        current.z +
-        (targetZ - current.z) * blend;
+    float nextX = current.x + dx;
+    float nextY = current.y + dy;
+    float nextZ = current.z + dz;
 
-    if (std::fabs(targetX) < 0.01f &&
-        std::fabs(nextX) < 0.15f)
-        nextX = 0.0f;
-
-    if (std::fabs(targetY) < 0.01f &&
-        std::fabs(nextY) < 0.15f)
-        nextY = 0.0f;
-
-    if (std::fabs(targetZ) < 0.01f &&
-        std::fabs(nextZ) < 0.15f)
-        nextZ = 0.0f;
+    // When there is no input, apply smooth air braking.
+    if (inputLength <= 0.001f)
+    {
+        const float brake = boostHeld ? 0.985f : 0.965f;
+        nextX *= brake;
+        nextY *= brake;
+        nextZ *= brake;
+    }
 
     ENTITY::SET_ENTITY_HAS_GRAVITY(ped, false);
 
@@ -377,6 +399,23 @@ static void UpdateFlight(Ped ped)
         nextY,
         nextZ
     );
+
+    // Turn Superman toward the camera/flight direction.
+    // This makes steering visually follow the camera instead of
+    // continuing to face the old heading.
+    if (inputLength > 0.001f)
+    {
+        float heading = camRot.z;
+
+        ENTITY::SET_ENTITY_ROTATION(
+            ped,
+            camRot.x,
+            0.0f,
+            heading,
+            2,
+            true
+        );
+    }
 }
 
 static void UpdateAbilities(Ped ped)
