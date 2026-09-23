@@ -204,18 +204,11 @@ static void UpdateMenu(Ped ped)
     if (!g_menuOpen)
         return;
 
-    // Arrow keys: Windows VK codes + GTA controls as fallback.
-    bool up =
-        Pressed(VK_UP, lastUp) ||
-        PAD::IS_CONTROL_JUST_PRESSED(0, 172);
-
-    bool down =
-        Pressed(VK_DOWN, lastDown) ||
-        PAD::IS_CONTROL_JUST_PRESSED(0, 173);
-
-    bool enter =
-        Pressed(VK_RETURN, lastEnter) ||
-        PAD::IS_CONTROL_JUST_PRESSED(0, 191);
+    // Use only Windows arrow keys.
+    // This SDK does not expose the PAD namespace used by GTA controls.
+    bool up = Pressed(VK_UP, lastUp);
+    bool down = Pressed(VK_DOWN, lastDown);
+    bool enter = Pressed(VK_RETURN, lastEnter);
 
     if (up)
     {
