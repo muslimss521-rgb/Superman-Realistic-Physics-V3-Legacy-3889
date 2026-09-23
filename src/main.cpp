@@ -293,11 +293,10 @@ static void UpdateFlight(Ped ped)
     if (boostHeld)
         speed = g_superman.boostSpeed;
 
-    Vector3 right(
-        -forward.y,
-        forward.x,
-        0.0f
-    );
+    Vector3 right;
+    right.x = -forward.y;
+    right.y = forward.x;
+    right.z = 0.0f;
 
     float rightLength =
         std::sqrt(
