@@ -19,7 +19,6 @@ void SupermanMain()
         {
             g_superman.enabled = !g_superman.enabled;
 
-            Player player = PLAYER::PLAYER_ID();
             Ped ped = PLAYER::PLAYER_PED_ID();
 
             if (g_superman.enabled)
@@ -31,38 +30,41 @@ void SupermanMain()
                 g_superman.abilities.state.freezeBreath = true;
                 g_superman.abilities.state.superBreath = true;
 
-                ENTITY::SET_ENTITY_INVINCIBLE(
-                    ped,
-                    true
-                );
-
-                PLAYER::SET_PLAYER_INVINCIBLE(
-                    player,
-                    true
-                );
-
-                HUD::SET_NOTIFICATION_TEXT_ENTRY("STRING");
-                HUD::ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(
-                    "SUPERMAN ON"
-                );
-                HUD::DRAW_NOTIFICATION(
-                    false,
-                    false
-                );
+                ENTITY::SET_ENTITY_INVINCIBLE(ped, true);
             }
             else
             {
                 g_superman.Reset();
 
-                ENTITY::SET_ENTITY_INVINCIBLE(
-                    ped,
-                    false
-                );
+                ENTITY::SET_ENTITY_INVINCIBLE(ped, false);
+            }
+        }
 
-                PLAYER::SET_PLAYER_INVINCIBLE(
-                    player,
-                    false
-                );
+        lastF5 = f5;
 
-                HUD::SET_NOTIFICATION_TEXT_ENTRY("STRING");
-                HUD
+        if (g_superman.enabled)
+        {
+            g_superman.Tick(0.016f);
+        }
+
+        scriptWait(0);
+    }
+}
+
+BOOL APIENTRY DllMain(
+    HMODULE hModule,
+    DWORD reason,
+    LPVOID)
+{
+    if (reason == DLL_PROCESS_ATTACH)
+    {
+        DisableThreadLibraryCalls(hModule);
+        scriptRegister(hModule, SupermanMain);
+    }
+    else if (reason == DLL_PROCESS_DETACH)
+    {
+        scriptUnregister(hModule);
+    }
+
+    return TRUE;
+}
