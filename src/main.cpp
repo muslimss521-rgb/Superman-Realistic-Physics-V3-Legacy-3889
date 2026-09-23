@@ -48,14 +48,16 @@ static float Dot(const Vector3& a,const Vector3& b){ return a.x*b.x+a.y*b.y+a.z*
 
 static float Length3(const Vector3& v){ return std::sqrt(v.x*v.x+v.y*v.y+v.z*v.z); }
 
+static Vector3 MakeVec(float x,float y,float z){ Vector3 v{}; v.x=x; v.y=y; v.z=z; return v; }
+
 static Vector3 Normalize3(const Vector3& v){
     float l=Length3(v);
-    if(l<=0.0001f) return Vector3(0.0f,0.0f,0.0f);
-    return Vector3(v.x/l,v.y/l,v.z/l);
+    if(l<=0.0001f) return MakeVec(0.0f,0.0f,0.0f);
+    return MakeVec(v.x/l,v.y/l,v.z/l);
 }
 
-static Vector3 Add(const Vector3& a,const Vector3& b){ return Vector3(a.x+b.x,a.y+b.y,a.z+b.z); }
-static Vector3 Mul(const Vector3& a,float s){ return Vector3(a.x*s,a.y*s,a.z*s); }
+static Vector3 Add(const Vector3& a,const Vector3& b){ return MakeVec(a.x+b.x,a.y+b.y,a.z+b.z); }
+static Vector3 Mul(const Vector3& a,float s){ return MakeVec(a.x*s,a.y*s,a.z*s); }
 
 static void CameraBasis(Vector3& forward,Vector3& right){
     const float r=0.017453292519943295f;
@@ -64,8 +66,8 @@ static void CameraBasis(Vector3& forward,Vector3& right){
     float yaw=rot.z*r;
     float cp=std::cos(pitch),sp=std::sin(pitch);
     float cy=std::cos(yaw),sy=std::sin(yaw);
-    forward=Vector3(-sy*cp,cy*cp,sp);
-    right=Vector3(cy,sy,0.0f);
+    forward=MakeVec(-sy*cp,cy*cp,sp);
+    right=MakeVec(cy,sy,0.0f);
 }
 
 static void Text(const char* text,float x,float y,float scale){
@@ -156,7 +158,7 @@ static void FreezeBreath(Ped ped,float dt){
     Ped target=FindTarget(ped,35.0f);
     if(!target) return;
     Vector3 a=ENTITY::GET_ENTITY_COORDS(ped,true), b=ENTITY::GET_ENTITY_COORDS(target,true);
-    Vector3 dir=Normalize3(Vector3(b.x-a.x,b.y-a.y,b.z-a.z));
+    Vector3 dir=Normalize3(MakeVec(b.x-a.x,b.y-a.y,b.z-a.z));
     ApplyDirectionalForce(target,dir,3.0f*dt*60.0f);
     ENTITY::FREEZE_ENTITY_POSITION(target,true);
     g_frozenTarget=target;
@@ -171,7 +173,7 @@ static void SuperBreath(Ped ped){
     Ped target=FindTarget(ped,22.0f);
     if(!target) return;
     Vector3 forward,right; CameraBasis(forward,right);
-    Vector3 toTarget=Normalize3(Vector3(ENTITY::GET_ENTITY_COORDS(target,true).x-ENTITY::GET_ENTITY_COORDS(ped,true).x,
+    Vector3 toTarget=Normalize3(MakeVec(ENTITY::GET_ENTITY_COORDS(target,true).x-ENTITY::GET_ENTITY_COORDS(ped,true).x,
                                         ENTITY::GET_ENTITY_COORDS(target,true).y-ENTITY::GET_ENTITY_COORDS(ped,true).y,
                                         ENTITY::GET_ENTITY_COORDS(target,true).z-ENTITY::GET_ENTITY_COORDS(ped,true).z));
     float alignment=Dot(forward,toTarget);
@@ -242,7 +244,7 @@ static void UpdateGroundPound(Ped ped){
     Ped target=FindTarget(ped,12.0f);
     if(target){
         Vector3 tp=ENTITY::GET_ENTITY_COORDS(target,true);
-        Vector3 dir=Normalize3(Vector3(tp.x-p.x,tp.y-p.y,0.4f));
+        Vector3 dir=Normalize3(MakeVec(tp.x-p.x,tp.y-p.y,0.4f));
         float energy=Physics::GroundImpactEnergy(g_superman.mass,120.0f);
         float force=std::sqrt(MaxF(1.0f,energy))*1.6f;
         ApplyDirectionalForce(target,dir,force);
@@ -252,7 +254,7 @@ static void UpdateGroundPound(Ped ped){
     Ped nearPed=FindTarget(ped,10.0f);
     if(nearPed){
         Vector3 np=ENTITY::GET_ENTITY_COORDS(nearPed,true);
-        Vector3 dir=Normalize3(Vector3(np.x-p.x,np.y-p.y,0.7f));
+        Vector3 dir=Normalize3(MakeVec(np.x-p.x,np.y-p.y,0.7f));
         ApplyDirectionalForce(nearPed,dir,80.0f);
         DamageAndRagdoll(nearPed,8,800);
     }
@@ -274,15 +276,15 @@ static void UpdateFlight(Ped ped,float dt){
     bool boost=(GetAsyncKeyState(VK_SHIFT)&0x8000)!=0 || g_superman.abilities.state.boost;
     float inputLen=std::sqrt(fi*fi+si*si+vi*vi);
     if(inputLen>1.0f){fi/=inputLen;si/=inputLen;vi/=inputLen;inputLen=1.0f;}
-    Vector3 desired=Add(Add(Mul(forward,fi),Mul(right,si)),Vector3(0,0,vi));
+    Vector3 desired=Add(Add(Mul(forward,fi),Mul(right,si)),MakeVec(0.0f,0.0f,vi));
     desired=Mul(Normalize3(desired),boost?g_superman.boostSpeed:g_superman.flightSpeed);
-    if(inputLen<=0.001f) desired=Vector3(0,0,0);
+    if(inputLen<=0.001f) desired=MakeVec(0.0f,0.0f,0.0f);
     Vector3 current=ENTITY::GET_ENTITY_VELOCITY(ped);
     float acceleration=boost?g_superman.boostAcceleration:g_superman.acceleration;
     float braking=boost?32.0f:48.0f;
     float rate=inputLen>0.001f?acceleration:braking;
     float maxChange=rate*dt;
-    Vector3 diff=Vector3(desired.x-current.x,desired.y-current.y,desired.z-current.z);
+    Vector3 diff=MakeVec(desired.x-current.x,desired.y-current.y,desired.z-current.z);
     float d=Length3(diff);
     if(d>maxChange && d>0.001f) diff=Mul(diff,maxChange/d);
     Vector3 next=Add(current,diff);
