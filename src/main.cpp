@@ -49,12 +49,14 @@ static void DrawTextSimple(
 {
     UI::SET_TEXT_FONT(0);
     UI::SET_TEXT_SCALE(0.0f, scale);
+
     UI::SET_TEXT_COLOUR(
         255,
         255,
         255,
         255
     );
+
     UI::SET_TEXT_PROPORTIONAL(true);
     UI::SET_TEXT_OUTLINE();
 
@@ -64,7 +66,10 @@ static void DrawTextSimple(
         (char*)text
     );
 
-    UI::_DRAW_TEXT(x, y);
+    UI::_DRAW_TEXT(
+        x,
+        y
+    );
 }
 
 static void DrawMenu()
@@ -72,6 +77,9 @@ static void DrawMenu()
     if (!g_menuOpen)
         return;
 
+    /*
+        Main background
+    */
     GRAPHICS::DRAW_RECT(
         0.18f,
         0.34f,
@@ -83,6 +91,9 @@ static void DrawMenu()
         210
     );
 
+    /*
+        Header
+    */
     GRAPHICS::DRAW_RECT(
         0.18f,
         0.135f,
@@ -101,12 +112,18 @@ static void DrawMenu()
         0.50f
     );
 
+    /*
+        Menu items
+    */
     for (int i = 0; i < MENU_COUNT; ++i)
     {
         float y =
             0.165f +
             (i * 0.045f);
 
+        /*
+            Selected item
+        */
         if (i == g_selected)
         {
             GRAPHICS::DRAW_RECT(
@@ -129,6 +146,9 @@ static void DrawMenu()
         );
     }
 
+    /*
+        Controls
+    */
     DrawTextSimple(
         "F3 CLOSE",
         0.055f,
@@ -146,346 +166,4 @@ static void DrawMenu()
     DrawTextSimple(
         "ENTER ACTIVATE",
         0.055f,
-        0.595f,
-        0.25f
-    );
-}
-
-static void EnableSuperman(Ped ped)
-{
-    g_superman.enabled = true;
-
-    ENTITY::SET_ENTITY_INVINCIBLE(
-        ped,
-        true
-    );
-
-    g_superman.abilities.state.superSpeed =
-        true;
-
-    PED::SET_PED_MOVE_RATE_OVERRIDE(
-        ped,
-        2.0f
-    );
-}
-
-static void DisableSuperman(Ped ped)
-{
-    g_superman.enabled = false;
-
-    g_superman.abilities.state.flight = false;
-    g_superman.abilities.state.boost = false;
-    g_superman.abilities.state.superSpeed = false;
-    g_superman.abilities.state.godMode = false;
-
-    ENTITY::SET_ENTITY_INVINCIBLE(
-        ped,
-        false
-    );
-
-    PED::SET_PED_MOVE_RATE_OVERRIDE(
-        ped,
-        1.0f
-    );
-
-    ENTITY::SET_ENTITY_HAS_GRAVITY(
-        ped,
-        true
-    );
-
-    ENTITY::SET_ENTITY_VELOCITY(
-        ped,
-        0.0f,
-        0.0f,
-        0.0f
-    );
-
-    g_superman.velocity = Vec3();
-}
-
-static void ToggleSuperman(Ped ped)
-{
-    if (g_superman.enabled)
-    {
-        DisableSuperman(ped);
-    }
-    else
-    {
-        EnableSuperman(ped);
-    }
-}
-
-static void ActivateMenuItem(Ped ped)
-{
-    switch (g_selected)
-    {
-        case 0:
-        {
-            ToggleSuperman(ped);
-            break;
-        }
-
-        case 1:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.flight =
-                !g_superman.abilities.state.flight;
-
-            if (g_superman.abilities.state.flight)
-            {
-                ENTITY::SET_ENTITY_HAS_GRAVITY(
-                    ped,
-                    false
-                );
-            }
-            else
-            {
-                ENTITY::SET_ENTITY_HAS_GRAVITY(
-                    ped,
-                    true
-                );
-
-                ENTITY::SET_ENTITY_VELOCITY(
-                    ped,
-                    0.0f,
-                    0.0f,
-                    0.0f
-                );
-            }
-
-            break;
-        }
-
-        case 2:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.boost =
-                !g_superman.abilities.state.boost;
-
-            break;
-        }
-
-        case 3:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.superSpeed =
-                !g_superman.abilities.state.superSpeed;
-
-            break;
-        }
-
-        case 4:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            break;
-        }
-
-        case 5:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.godMode =
-                !g_superman.abilities.state.godMode;
-
-            ENTITY::SET_ENTITY_INVINCIBLE(
-                ped,
-                g_superman.abilities.state.godMode
-            );
-
-            break;
-        }
-
-        case 6:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.heatVision =
-                !g_superman.abilities.state.heatVision;
-
-            break;
-        }
-
-        case 7:
-        {
-            if (!g_superman.enabled)
-            {
-                EnableSuperman(ped);
-            }
-
-            g_superman.abilities.state.freezeBreath =
-                !g_superman.abilities.state.freezeBreath;
-
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-}
-
-static void UpdateMenu(Ped ped)
-{
-    if (KeyPressed(VK_F3, g_lastF3))
-    {
-        g_menuOpen = !g_menuOpen;
-    }
-
-    if (!g_menuOpen)
-        return;
-
-    if (KeyPressed(VK_UP, g_lastUp))
-    {
-        --g_selected;
-
-        if (g_selected < 0)
-        {
-            g_selected = MENU_COUNT - 1;
-        }
-    }
-
-    if (KeyPressed(VK_DOWN, g_lastDown))
-    {
-        ++g_selected;
-
-        if (g_selected >= MENU_COUNT)
-        {
-            g_selected = 0;
-        }
-    }
-
-    if (KeyPressed(VK_RETURN, g_lastEnter))
-    {
-        ActivateMenuItem(ped);
-    }
-}
-
-static void UpdateSuperJump(Ped ped)
-{
-    if (!g_superman.enabled)
-        return;
-
-    if (g_selected != 4)
-        return;
-
-    if (!g_menuOpen)
-        return;
-
-    if (GetAsyncKeyState(VK_RETURN) & 0x8000)
-    {
-        PLAYER::SET_SUPER_JUMP_THIS_FRAME(
-            PLAYER::PLAYER_ID()
-        );
-    }
-}
-
-static void UpdateFlight(Ped ped)
-{
-    if (!g_superman.enabled)
-        return;
-
-    if (!g_superman.abilities.state.flight)
-        return;
-
-    Vector3 forward =
-        ENTITY::GET_ENTITY_FORWARD_VECTOR(
-            ped
-        );
-
-    float speed =
-        g_superman.abilities.state.boost
-        ? g_superman.boostSpeed
-        : g_superman.flightSpeed;
-
-    ENTITY::SET_ENTITY_VELOCITY(
-        ped,
-        forward.x * speed,
-        forward.y * speed,
-        forward.z * speed
-    );
-}
-
-static void UpdateActiveAbilities(Ped ped)
-{
-    if (!g_superman.enabled)
-        return;
-
-    if (g_superman.abilities.state.godMode)
-    {
-        ENTITY::SET_ENTITY_INVINCIBLE(
-            ped,
-            true
-        );
-    }
-
-    if (g_superman.abilities.state.superSpeed)
-    {
-        PED::SET_PED_MOVE_RATE_OVERRIDE(
-            ped,
-            2.0f
-        );
-    }
-    else
-    {
-        PED::SET_PED_MOVE_RATE_OVERRIDE(
-            ped,
-            1.0f
-        );
-    }
-
-    UpdateFlight(ped);
-
-    g_superman.Tick(0.016f);
-}
-
-static void UpdateSuperman()
-{
-    Ped ped =
-        PLAYER::PLAYER_PED_ID();
-
-    if (!ped)
-        return;
-
-    UpdateMenu(ped);
-
-    UpdateSuperJump(ped);
-
-    UpdateActiveAbilities(ped);
-
-    DrawMenu();
-}
-
-void ScriptMain()
-{
-    g_superman.Reset();
-
-    while (true)
-    {
-        UpdateSuperman();
-
-        WAIT(0);
-    }
-}
+        0.
