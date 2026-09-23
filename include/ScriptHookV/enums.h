@@ -1476,4 +1476,3 @@ enum eHudComponent
 	HudComponentReplayLeftBar,
 	HudComponentReplayTimer
 };
-
