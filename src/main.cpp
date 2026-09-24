@@ -4,12 +4,10 @@
 #include <algorithm>
 #include <cmath>
 
-#include "ScriptHookV/types.h"
-#include "ScriptHookV/natives.h"
-
+// Подключаем только заголовок вашего мода. Он знает правильный порядок инклудов SDK.
+#include "Superman.h"
 #include "Physics.h"
 #include "Abilities.h"
-#include "Superman.h"
 
 bool g_isFlying = false;
 float g_currentSpeed = 0.0f;
@@ -20,7 +18,7 @@ void UpdateSupermanPhysics()
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     if (ENTITY::IS_ENTITY_DEAD(playerPed)) return;
 
-    if (PAD::IS_CONTROL_JUST_PRESSED(0, 22)) 
+    if (CONTROLS::IS_CONTROL_JUST_PRESSED(0, 22)) 
     {
         g_isFlying = !g_isFlying;
         if (!g_isFlying)
@@ -40,9 +38,9 @@ void UpdateSupermanPhysics()
         return;
     }
 
-    float forwardInput = PAD::GET_CONTROL_NORMAL(0, 32) - PAD::GET_CONTROL_NORMAL(0, 33); 
-    float turnInput = PAD::GET_CONTROL_NORMAL(0, 34) - PAD::GET_CONTROL_NORMAL(0, 35);    
-    bool isBoosting = PAD::IS_CONTROL_PRESSED(0, 21); 
+    float forwardInput = CONTROLS::GET_CONTROL_NORMAL(0, 32) - CONTROLS::GET_CONTROL_NORMAL(0, 33); 
+    float turnInput = CONTROLS::GET_CONTROL_NORMAL(0, 34) - CONTROLS::GET_CONTROL_NORMAL(0, 35);    
+    bool isBoosting = CONTROLS::IS_CONTROL_PRESSED(0, 21); 
 
     Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
     float pitch = camRot.x * 0.0174532925f;
@@ -62,7 +60,7 @@ void UpdateSupermanPhysics()
     }
 
     float acceleration = (thrustForce - dragForce) / SUPER_MASS;
-    g_currentSpeed += acceleration * MISC::GET_FRAME_TIME();
+    g_currentSpeed += acceleration * GAMEPLAY::GET_FRAME_TIME();
     if (g_currentSpeed < 0.0f) g_currentSpeed = 0.0f;
 
     ENTITY::SET_ENTITY_VELOCITY(
@@ -75,7 +73,7 @@ void UpdateSupermanPhysics()
     if (g_currentSpeed >= SOUND_SPEED && isBoosting)
     {
         Vector3 coords = ENTITY::GET_ENTITY_COORDS(playerPed, true);
-        FIRE::ADD_EXPLOSION(coords.x, coords.y, coords.z, 34, 0.0f, true, false, 1.0f, false); 
+        FIRE::ADD_EXPLOSION(coords.x, coords.y, coords.z, 34, 1.0f, true, false); 
         CAM::SHAKE_GAMEPLAY_CAM("LARGE_EXPLOSION_SHAKE", 1.2f);
     }
 
