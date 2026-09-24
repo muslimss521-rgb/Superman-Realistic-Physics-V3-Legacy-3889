@@ -1,37 +1,71 @@
-SUPERMAN REALISTIC PHYSICS V3 - FULL ABILITIES
+REALISTIC PHYSICS V3
+====================
 
 Core:
-- F3 menu
-- Superman on/off
-- Flight with camera-relative steering
-- Smooth acceleration/deceleration
-- Air drag and speed limits
-- Boost with higher acceleration and speed
-- Boost exhaust particle effects and camera shake
-- Super speed
-- Super jump
-- Invincibility
+- mass
+- velocity
+- acceleration
+- momentum
+- kinetic energy
+- impulse
+- aerodynamic drag
+- gravity
+- impact force
+- impact damage
 
-Offensive powers:
-- Heat Vision (hold H)
-- Freeze Breath (hold J)
-- Super Breath (hold K)
-- Ground Pound (V)
-- Thunder Clap (T)
-- Sonic Boom (Y)
-- Solar Flare (U)
-- Grab/carry (E), throw (Q)
+Abilities planned/structured:
+- realistic flight / hover / boost
+- super speed
+- strength / punch impulse
+- grab / throw
+- ground pound
+- heat vision
+- freeze breath
+- super breath
+- bullet-time
+- senses
+- custom camera
+- costume system
+- audio system
+- configurable controls
 
-Senses:
-- X-Ray / Super Hearing toggle (I)
+The current ZIP is a buildable foundation. GTA-specific native calls, animation assets,
+PED switching and particle/audio assets must be integrated with the licensed/available
+ScriptHookV SDK and user-owned mod assets.
 
-Flight:
-- W/S forward/back
-- A/D strafe
-- Space up
-- Ctrl down
-- Shift boost
 
-Important:
-This is an original native C++ implementation using ScriptHookV natives.
-It does not require NIBSHDotNet or ScriptHookVDotNet.
+UNITY ABILITIES PORT
+====================
+The supplied SupermanAbilities_Unity.zip was reviewed and its gameplay concepts were integrated into the native GTA V project.
+
+Integrated:
+1. RealisticSupermanFlight:
+   - flyForce 30
+   - maxSpeed 50
+   - boost multiplier 2.5
+   - air drag 1
+   - stop drag 5
+   - 90% gravity compensation while moving forward
+   - visual bank up to 35 degrees
+   - smooth bank response 5
+   - gravity remains enabled during flight
+
+2. HeatVision:
+   - 100 m visual beam
+   - physical push force
+   - periodic damage
+
+3. FreezeBreath:
+   - 15 m range
+   - 30 degree cone
+   - freezes all peds inside the cone
+
+4. SupermanLanding:
+   - landing impact energy uses mass and vertical velocity
+   - shockwave radius 20 m
+   - falloff-based impulse
+
+5. XRayVision:
+   - toggle on Y
+   - scans peds up to 80 m
+   - pre-render/alpha + markers/lines are used as the GTA-native approximation

@@ -1,0 +1,34 @@
+SUPERMAN CONTROLS
+
+F3     - menu
+V      - toggle flight
+W/S    - forward/back
+A/D    - left/right
+SPACE  - up
+CTRL   - down
+LShift - boost while held
+G      - super speed toggle
+SPACE  - super jump when on ground
+I      - invincibility toggle
+H      - heat vision (hold)
+J      - freeze breath (hold)
+K      - super breath (hold)
+X      - ground pound
+E      - grab; press again to throw
+Q      - throw grabbed target
+R      - sonic boom
+T      - solar flare
+B      - bullet time toggle
+Y      - X-Ray vision toggle
+
+All controls can be changed in config/Superman.ini.
+Flight uses the vanilla GTA V skydive free_idle pose so the
+character does not use the normal running animation while airborne.
+
+
+Ported from supplied Unity SupermanAbilities package:
+- RealisticSupermanFlight.cs: thrust 30, max speed 50, boost x2.5, air drag 1, stop drag 5, lift compensation, and 35-degree bank.
+- HeatVision.cs: 100 m beam concept and physical push.
+- FreezeBreath.cs: 15 m / 30-degree cone freeze.
+- SupermanLanding.cs: impact-energy landing shockwave.
+- XRayVision.cs: native GTA approximation using pre-render/alpha/scan markers; GTA has no Unity-style Camera.cullingMask API.
