@@ -4,7 +4,11 @@
 #include <algorithm>
 #include <cmath>
 
-// ВАЖНО: Подключаем заголовок Superman.h ПЕРВЫМ, чтобы подгрузить нативы игрового движка
+// Гарантированно подключаем заголовочные файлы ScriptHookV SDK для файлов реализации
+#include "ScriptHookV/types.h"
+#include "ScriptHookV/natives.h"
+
+// Подключаем локальные модули физики и способностей мода
 #include "Superman.h"
 #include "Physics.h"
 #include "Abilities.h"
@@ -70,11 +74,12 @@ void UpdateSupermanPhysics()
         flightDirection.z * g_currentSpeed
     );
 
+    // Исправлено: в старых версиях SDK тряска камеры вызывалась через пространство GAMEPLAY
     if (g_currentSpeed >= SOUND_SPEED && isBoosting)
     {
         Vector3 coords = ENTITY::GET_ENTITY_COORDS(playerPed, true);
         FIRE::ADD_EXPLOSION(coords.x, coords.y, coords.z, 34, 1.0f, true, false); 
-        CAM::SHAKE_GAMEPLAY_CAM("LARGE_EXPLOSION_SHAKE", 1.2f);
+        GAMEPLAY::SHAKE_GAMEPLAY_CAM("LARGE_EXPLOSION_SHAKE", 1.2f);
     }
 
     float targetLean = -turnInput * 45.0f; 
