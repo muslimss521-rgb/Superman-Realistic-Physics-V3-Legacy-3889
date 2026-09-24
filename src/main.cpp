@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-// Подключаем только заголовок вашего мода. Он знает правильный порядок инклудов SDK.
+// ВАЖНО: Подключаем заголовок Superman.h ПЕРВЫМ, чтобы подгрузить нативы игрового движка
 #include "Superman.h"
 #include "Physics.h"
 #include "Abilities.h"
