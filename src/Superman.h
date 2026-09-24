@@ -10,11 +10,21 @@ public:
 
     float mass = 95.0f;
 
-    float flightSpeed = 85.0f;
-    float boostSpeed = 240.0f;
+    // Ported from the supplied Unity RealisticSupermanFlight settings.
+    float flightForce = 30.0f;
+    float flightSpeed = 50.0f;
+    float boostMultiplier = 2.5f;
+    float boostSpeed = 125.0f;
 
-    float acceleration = 45.0f;
-    float boostAcceleration = 110.0f;
+    float turnSpeed = 3.0f;
+    float airDrag = 1.0f;
+    float stopDrag = 5.0f;
+
+    float leanAmount = 35.0f;
+    float leanSpeed = 5.0f;
+
+    float acceleration = 30.0f;
+    float boostAcceleration = 75.0f;
 
     Vec3 velocity{};
     Vec3 angularVelocity{};

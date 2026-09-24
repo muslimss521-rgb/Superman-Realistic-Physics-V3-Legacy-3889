@@ -3,40 +3,22 @@
 
 void SupermanController::Tick(float dt)
 {
-    if (dt <= 0.0f)
+    if (!enabled || dt <= 0.0f)
         return;
 
-    if (!enabled)
-    {
-        velocity = Vec3();
-        return;
-    }
+    float maxSpeed =
+        abilities.state.boost
+        ? boostSpeed
+        : flightSpeed;
 
-    // Keep the internal flight model stable. The actual entity velocity is
-    // controlled by UpdateFlight() in main.cpp; this state is used for
-    // energy/speed calculations and future abilities.
+    if (maxSpeed < 1.0f)
+        maxSpeed = 1.0f;
+
     float speed = velocity.Length();
 
-    if (speed > 0.001f)
-    {
-        const float dragCoefficient =
-            abilities.state.boost ? 0.22f : 0.35f;
+    if (speed > maxSpeed)
+        velocity = velocity.Normalized() * maxSpeed;
 
-        Vec3 drag = Physics::Drag(
-            velocity,
-            1.225f,
-            dragCoefficient,
-            0.75f
-        );
-
-        velocity += (drag * (1.0f / std::max(1.0f, mass))) * dt;
-    }
-
-    const float hardLimit =
-        abilities.state.boost ? boostSpeed : flightSpeed;
-
-    float newSpeed = velocity.Length();
-
-    if (newSpeed > hardLimit && newSpeed > 0.001f)
-        velocity = velocity.Normalized() * hardLimit;
+    // The actual GTA entity is driven by main.cpp. This controller
+    // remains the source of physical parameters and kinetic energy.
 }
