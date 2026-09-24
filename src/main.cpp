@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <cmath>
 
-// Подключаем только базовые типы и кастомный вызов через ScriptHookV без шаблонов
+// Базовые типы данных ScriptHookV
 #include "ScriptHookV/types.h"
 #include "ScriptHookV/nativeCaller.h"
 
-// Локальные конфигурации физики
+// Подключаем физику
 #include "Physics.h"
 #include "Superman.h"
 
@@ -16,7 +16,6 @@ bool g_isFlying = false;
 float g_currentSpeed = 0.0f;
 float g_currentLean = 0.0f;
 
-// Старый синтаксис ScriptHookV для вызова нативов через стек (работает в 100% версий SDK)
 void TriggerHeatVisionJulioNIB()
 {
     // PLAYER::PLAYER_PED_ID()
@@ -32,11 +31,11 @@ void TriggerHeatVisionJulioNIB()
     // CAM::GET_GAMEPLAY_CAM_ROT(2)
     nativeInit(0x837765A2533ECE65);
     nativePush(2);
-    Vector3 camRot = *nativeCall();
+    Vector3 camRot = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
 
     // CAM::GET_GAMEPLAY_CAM_COORD()
     nativeInit(0xFAAA931A783AEC66);
-    Vector3 camCoord = *nativeCall();
+    Vector3 camCoord = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
     
     float pitch = camRot.x * 0.0174532925f;
     float yaw = camRot.z * 0.0174532925f;
@@ -100,15 +99,22 @@ void TriggerHeatVisionJulioNIB()
             nativeCall();
         }
         // ENTITY::IS_ENTITY_A_VEHICLE(targetEntity)
-        else if (nativeInit(0x1253ECE4E50DE2E6), nativePush(targetEntity), (BOOL)*nativeCall())
+        else
         {
-            // ENTITY::APPLY_FORCE_TO_ENTITY(...)
-            nativeInit(0xC5F6E3E66F1CEDE4);
-            nativePush(targetEntity); nativePush(1);
-            nativePush(forwardVec.x * 120.0f); nativePush(forwardVec.y * 120.0f); nativePush(forwardVec.z * 70.0f);
-            nativePush(0.0f); nativePush(0.0f); nativePush(0.5f); nativePush(0);
-            nativePush(false); nativePush(true); nativePush(true); nativePush(true); nativePush(true);
-            nativeCall();
+            nativeInit(0x1253ECE4E50DE2E6);
+            nativePush(targetEntity);
+            BOOL isVehicle = *nativeCall();
+            
+            if (isVehicle)
+            {
+                // ENTITY::APPLY_FORCE_TO_ENTITY(...)
+                nativeInit(0xC5F6E3E66F1CEDE4);
+                nativePush(targetEntity); nativePush(1);
+                nativePush(forwardVec.x * 120.0f); nativePush(forwardVec.y * 120.0f); nativePush(forwardVec.z * 70.0f);
+                nativePush(0.0f); nativePush(0.0f); nativePush(0.5f); nativePush(0);
+                nativePush(false); nativePush(true); nativePush(true); nativePush(true); nativePush(true);
+                nativeCall();
+            }
         }
         
         // FIRE::START_ENTITY_FIRE(targetEntity)
@@ -184,7 +190,7 @@ void UpdateSupermanPhysics()
 
     // CAM::GET_GAMEPLAY_CAM_ROT(2)
     nativeInit(0x837765A2533ECE65); nativePush(2);
-    Vector3 camRot = *nativeCall();
+    Vector3 camRot = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
 
     float pitch = camRot.x * 0.0174532925f;
     float yaw = camRot.z * 0.0174532925f;
@@ -221,7 +227,7 @@ void UpdateSupermanPhysics()
     {
         // ENTITY::GET_ENTITY_COORDS(...)
         nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true);
-        Vector3 coords = *nativeCall();
+        Vector3 coords = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
 
         // FIRE::ADD_EXPLOSION(...)
         nativeInit(0x4201E3E66F1CEDE2);
@@ -251,15 +257,14 @@ void UpdateSupermanPhysics()
 
     // ENTITY::GET_ENTITY_COORDS(...)
     nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true);
-    Vector3 pCoords = *nativeCall();
+    Vector3 pCoords = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
     
     // GRAPHICS::DRAW_MARKER(...)
     nativeInit(0x3201E3E66F1CEDE2);
-    nativePush(1); nativePush(pCoords.x); nativePush(pCoords.y); nativePush(pos.z - 1.0f);
+    nativePush(1); nativePush(pCoords.x); nativePush(pCoords.y); nativePush(pCoords.z - 1.0f); // Опечатка pos.z исправлена на pCoords.z
     nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f);
     nativePush(2.0f); nativePush(2.0f); nativePush(0.5f);
     nativePush(255); nativePush(0); nativePush(0); nativePush((int)(normalizedSpeed * 255));
     nativePush(false); nativePush(true); nativePush(2); nativePush(false);
-    nativePush(nullptr); nativePush(nullptr); nativePush(false);
-    nativeCall();
-}
+    
+    // В старых SDK для передачи нулевых указателей в нативы передается числовой 0 вместо nullptr макроса
