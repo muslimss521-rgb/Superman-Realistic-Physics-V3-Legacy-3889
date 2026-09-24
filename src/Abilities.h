@@ -3,13 +3,16 @@
 #include <windows.h>
 #include <cmath>
 
+// Подключаем типы ScriptHookV SDK
 #include "ScriptHookV/types.h"
 #include "ScriptHookV/natives.h"
 
 inline void TriggerHeatVisionJulioNIB()
 {
     Ped playerPed = PLAYER::PLAYER_PED_ID();
-    if (!PAD::IS_CONTROL_PRESSED(0, 24)) return;
+    
+    // В старых SDK проверка кнопок идет через CONTROLS
+    if (!CONTROLS::IS_CONTROL_PRESSED(0, 24)) return;
 
     Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
     Vector3 camCoord = CAM::GET_GAMEPLAY_CAM_COORD();
@@ -29,14 +32,15 @@ inline void TriggerHeatVisionJulioNIB()
 
     GRAPHICS::DRAW_LIGHT_WITH_RANGE(camCoord.x, camCoord.y, camCoord.z, 255, 0, 0, 30.0f, 15.0f);
 
-    int raycast = SHAPETEST::START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE(
+    // В legacy SDK ShapeTest выполнялся через нативы GAMEPLAY
+    int raycast = GAMEPLAY::START_SHAPE_TEST_RAY(
         camCoord.x, camCoord.y, camCoord.z, 
         endCoords.x, endCoords.y, endCoords.z, 
         -1, playerPed, 7
     );
     
     BOOL hit; Vector3 hitCoords; Vector3 surfaceNormal; Entity targetEntity;
-    SHAPETEST::GET_SHAPE_TEST_RESULT(raycast, &hit, &hitCoords, &surfaceNormal, &targetEntity);
+    GAMEPLAY::GET_SHAPE_TEST_RESULT(raycast, &hit, &hitCoords, &surfaceNormal, &targetEntity);
 
     if (hit && ENTITY::DOES_ENTITY_EXIST(targetEntity))
     {
