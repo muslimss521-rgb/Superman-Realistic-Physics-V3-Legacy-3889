@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-// Базовые типы данных ScriptHookV
+// Подключаем типы данных ScriptHookV
 #include "ScriptHookV/types.h"
 #include "ScriptHookV/nativeCaller.h"
 
@@ -28,17 +28,28 @@ void TriggerHeatVisionJulioNIB()
     nativePush(24);
     if (!*nativeCall()) return;
 
-    // CAM::GET_GAMEPLAY_CAM_ROT(2)
+    // В legacy SDK структуры Vector3 читаются через поочередный сбор глобальных переменных
+    float camRotX, camRotY, camRotZ;
+    float camCoordX, camCoordY, camCoordZ;
+
+    // CAM::GET_GAMEPLAY_CAM_ROT(2) -> записываем в глобальный стек
     nativeInit(0x837765A2533ECE65);
     nativePush(2);
-    Vector3 camRot = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
+    nativeCall();
+    // Читаем float значения осей напрямую из возвращаемого буфера движка
+    camRotX = ((float*)nativeCall())[0];
+    camRotY = ((float*)nativeCall())[1];
+    camRotZ = ((float*)nativeCall())[2];
 
     // CAM::GET_GAMEPLAY_CAM_COORD()
     nativeInit(0xFAAA931A783AEC66);
-    Vector3 camCoord = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
+    nativeCall();
+    camCoordX = ((float*)nativeCall())[0];
+    camCoordY = ((float*)nativeCall())[1];
+    camCoordZ = ((float*)nativeCall())[2];
     
-    float pitch = camRot.x * 0.0174532925f;
-    float yaw = camRot.z * 0.0174532925f;
+    float pitch = camRotX * 0.0174532925f;
+    float yaw = camRotZ * 0.0174532925f;
     
     Vector3 forwardVec;
     forwardVec.x = -sin(yaw) * cos(pitch);
@@ -46,20 +57,20 @@ void TriggerHeatVisionJulioNIB()
     forwardVec.z = sin(pitch);
     
     Vector3 endCoords;
-    endCoords.x = camCoord.x + forwardVec.x * 100.0f;
-    endCoords.y = camCoord.y + forwardVec.y * 100.0f;
-    endCoords.z = camCoord.z + forwardVec.z * 100.0f;
+    endCoords.x = camCoordX + forwardVec.x * 100.0f;
+    endCoords.y = camCoordY + forwardVec.y * 100.0f;
+    endCoords.z = camCoordZ + forwardVec.z * 100.0f;
 
     // GRAPHICS::DRAW_LIGHT_WITH_RANGE(...)
     nativeInit(0x66C4C50F33CED8E8);
-    nativePush(camCoord.x); nativePush(camCoord.y); nativePush(camCoord.z);
+    nativePush(camCoordX); nativePush(camCoordY); nativePush(camCoordZ);
     nativePush(255); nativePush(0); nativePush(0);
     nativePush(30.0f); nativePush(15.0f);
     nativeCall();
 
     // GAMEPLAY::START_SHAPE_TEST_RAY(...)
     nativeInit(0x6A2924E9273DE2E6);
-    nativePush(camCoord.x); nativePush(camCoord.y); nativePush(camCoord.z);
+    nativePush(camCoordX); nativePush(camCoordY); nativePush(camCoordZ);
     nativePush(endCoords.x); nativePush(endCoords.y); nativePush(endCoords.z);
     nativePush(-1); nativePush(playerPed); nativePush(7);
     int raycast = *nativeCall();
@@ -98,7 +109,6 @@ void TriggerHeatVisionJulioNIB()
             nativePush(false); nativePush(true); nativePush(true); nativePush(true); nativePush(true);
             nativeCall();
         }
-        // ENTITY::IS_ENTITY_A_VEHICLE(targetEntity)
         else
         {
             nativeInit(0x1253ECE4E50DE2E6);
@@ -189,11 +199,14 @@ void UpdateSupermanPhysics()
     bool isBoosting = *nativeCall();
 
     // CAM::GET_GAMEPLAY_CAM_ROT(2)
-    nativeInit(0x837765A2533ECE65); nativePush(2);
-    Vector3 camRot = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
+    float camRotX, camRotY, camRotZ;
+    nativeInit(0x837765A2533ECE65); nativePush(2); nativeCall();
+    camRotX = ((float*)nativeCall())[0];
+    camRotY = ((float*)nativeCall())[1];
+    camRotZ = ((float*)nativeCall())[2];
 
-    float pitch = camRot.x * 0.0174532925f;
-    float yaw = camRot.z * 0.0174532925f;
+    float pitch = camRotX * 0.0174532925f;
+    float yaw = camRotZ * 0.0174532925f;
     
     Vector3 flightDirection;
     flightDirection.x = -sin(yaw) * cos(pitch);
@@ -226,12 +239,14 @@ void UpdateSupermanPhysics()
     if (g_currentSpeed >= SOUND_SPEED && isBoosting)
     {
         // ENTITY::GET_ENTITY_COORDS(...)
-        nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true);
-        Vector3 coords = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
+        nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true); nativeCall();
+        float coordsX = ((float*)nativeCall())[0];
+        float coordsY = ((float*)nativeCall())[1];
+        float coordsZ = ((float*)nativeCall())[2];
 
         // FIRE::ADD_EXPLOSION(...)
         nativeInit(0x4201E3E66F1CEDE2);
-        nativePush(coords.x); nativePush(coords.y); nativePush(coords.z);
+        nativePush(coordsX); nativePush(coordsY); nativePush(coordsZ);
         nativePush(34); nativePush(1.0f); nativePush(true); nativePush(false);
         nativeCall();
 
@@ -246,7 +261,7 @@ void UpdateSupermanPhysics()
     
     // ENTITY::SET_ENTITY_ROTATION(...)
     nativeInit(0x82F6E3E66F1CEDE2);
-    nativePush(playerPed); nativePush(camRot.x); nativePush(0.0f); nativePush(camRot.z + g_currentLean);
+    nativePush(playerPed); nativePush(camRotX); nativePush(0.0f); nativePush(camRotZ + g_currentLean);
     nativePush(2); nativePush(true);
     nativeCall();
 
@@ -256,15 +271,10 @@ void UpdateSupermanPhysics()
     if (normalizedSpeed < 0.0f) normalizedSpeed = 0.0f;
 
     // ENTITY::GET_ENTITY_COORDS(...)
-    nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true);
-    Vector3 pCoords = GetNativeCallResult<Vector3>(); // Исправлено приведение типов для Vector3
+    nativeInit(0x3C5C3E2C22D3E3E2); nativePush(playerPed); nativePush(true); nativeCall();
+    float pCoordsX = ((float*)nativeCall())[0];
+    float pCoordsY = ((float*)nativeCall())[1];
+    float pCoordsZ = ((float*)nativeCall())[2];
     
     // GRAPHICS::DRAW_MARKER(...)
     nativeInit(0x3201E3E66F1CEDE2);
-    nativePush(1); nativePush(pCoords.x); nativePush(pCoords.y); nativePush(pCoords.z - 1.0f); // Опечатка pos.z исправлена на pCoords.z
-    nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f);
-    nativePush(2.0f); nativePush(2.0f); nativePush(0.5f);
-    nativePush(255); nativePush(0); nativePush(0); nativePush((int)(normalizedSpeed * 255));
-    nativePush(false); nativePush(true); nativePush(2); nativePush(false);
-    
-    // В старых SDK для передачи нулевых указателей в нативы передается числовой 0 вместо nullptr макроса
