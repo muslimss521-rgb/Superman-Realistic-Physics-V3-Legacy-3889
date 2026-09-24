@@ -1,24 +1,19 @@
-#include "Superman.h"
-#include <algorithm>
+#pragma once
+#define NOMINMAX
+#include <windows.h>
+#include "ScriptHookV/types.h"
 
-void SupermanController::Tick(float dt)
+class Superman 
 {
-    if (!enabled || dt <= 0.0f)
-        return;
+private:
+    bool isFlyingEnabled;
+    float currentFlightSpeed;
+    float bodyRollAngle;
 
-    float maxSpeed =
-        abilities.state.boost
-        ? boostSpeed
-        : flightSpeed;
-
-    if (maxSpeed < 1.0f)
-        maxSpeed = 1.0f;
-
-    float speed = velocity.Length();
-
-    if (speed > maxSpeed)
-        velocity = velocity.Normalized() * maxSpeed;
-
-    // The actual GTA entity is driven by main.cpp. This controller
-    // remains the source of physical parameters and kinetic energy.
-}
+public:
+    Superman() : isFlyingEnabled(false), currentFlightSpeed(0.0f), bodyRollAngle(0.0f) {}
+    
+    void Initialize();
+    void UpdateFlightState();
+    void ProcessSuperAbilities();
+};
