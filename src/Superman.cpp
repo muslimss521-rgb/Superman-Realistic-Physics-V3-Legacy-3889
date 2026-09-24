@@ -1,20 +1,42 @@
 #include "Superman.h"
 #include <algorithm>
 
-void SupermanController::Tick(float dt) {
-    if (!enabled || dt <= 0.0f) return;
+void SupermanController::Tick(float dt)
+{
+    if (dt <= 0.0f)
+        return;
 
-    float maxSpeed = abilities.state.boost ? boostSpeed : flightSpeed;
-    float accel = abilities.state.boost ? boostAcceleration : acceleration;
-
-    float speed = velocity.Length();
-    if (speed < maxSpeed) {
-        float next = std::min(maxSpeed, speed + accel * dt);
-        velocity = speed > 0.001f ? velocity.Normalized() * next : Vec3{0,0,0};
+    if (!enabled)
+    {
+        velocity = Vec3();
+        return;
     }
 
-    // Aerodynamic drag keeps the simulation stable at high speed.
-    Vec3 drag = Physics::Drag(velocity, 1.225f, 0.35f, 0.75f);
-    Vec3 accelerationFromDrag = drag * (1.0f / mass);
-    velocity += accelerationFromDrag * dt;
+    // Keep the internal flight model stable. The actual entity velocity is
+    // controlled by UpdateFlight() in main.cpp; this state is used for
+    // energy/speed calculations and future abilities.
+    float speed = velocity.Length();
+
+    if (speed > 0.001f)
+    {
+        const float dragCoefficient =
+            abilities.state.boost ? 0.22f : 0.35f;
+
+        Vec3 drag = Physics::Drag(
+            velocity,
+            1.225f,
+            dragCoefficient,
+            0.75f
+        );
+
+        velocity += (drag * (1.0f / std::max(1.0f, mass))) * dt;
+    }
+
+    const float hardLimit =
+        abilities.state.boost ? boostSpeed : flightSpeed;
+
+    float newSpeed = velocity.Length();
+
+    if (newSpeed > hardLimit && newSpeed > 0.001f)
+        velocity = velocity.Normalized() * hardLimit;
 }

@@ -14,6 +14,7 @@ struct AbilityState
     bool superBreath = false;
 
     bool bulletTime = false;
+    bool xray = false;
     bool godMode = false;
 
     bool grabbing = false;
