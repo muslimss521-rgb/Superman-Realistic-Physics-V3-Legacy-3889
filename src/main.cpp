@@ -4,25 +4,68 @@
 #include <algorithm>
 #include <cmath>
 
-// Гарантированно подключаем заголовочные файлы ScriptHookV SDK для файлов реализации
+// 1. ПОДКЛЮЧАЕМ SDK СТРОГО ТУТ (Компилятор сразу увидит все типы движка)
 #include "ScriptHookV/types.h"
 #include "ScriptHookV/natives.h"
 
-// Подключаем локальные модули физики и способностей мода
-#include "Superman.h"
+// 2. ПОДКЛЮЧАЕМ ЛОКАЛЬНЫЕ КОНФИГУРАЦИИ
 #include "Physics.h"
-#include "Abilities.h"
+#include "Superman.h"
 
+// Состояния симулятора
 bool g_isFlying = false;
 float g_currentSpeed = 0.0f;
 float g_currentLean = 0.0f;
+
+// Логика боевого лазера в стиле JulioNIB, перенесенная сюда во избежание рекурсии заголовков
+void TriggerHeatVisionJulioNIB()
+{
+    Ped playerPed = PLAYER::PLAYER_PED_ID();
+    if (!CONTROLS::IS_CONTROL_PRESSED(0, 24)) return; // ЛКМ
+
+    Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
+    Vector3 camCoord = CAM::GET_GAMEPLAY_CAM_COORD();
+    
+    float pitch = camRot.x * 0.0174532925f;
+    float yaw = camRot.z * 0.0174532925f;
+    
+    Vector3 forwardVec;
+    forwardVec.x = -sin(yaw) * cos(pitch);
+    forwardVec.y = cos(yaw) * cos(pitch);
+    forwardVec.z = sin(pitch);
+    
+    Vector3 endCoords;
+    endCoords.x = camCoord.x + forwardVec.x * 100.0f;
+    endCoords.y = camCoord.y + forwardVec.y * 100.0f;
+    endCoords.z = camCoord.z + forwardVec.z * 100.0f;
+
+    GRAPHICS::DRAW_LIGHT_WITH_RANGE(camCoord.x, camCoord.y, camCoord.z, 255, 0, 0, 30.0f, 15.0f);
+
+    int raycast = GAMEPLAY::START_SHAPE_TEST_RAY(camCoord.x, camCoord.y, camCoord.z, endCoords.x, endCoords.y, endCoords.z, -1, playerPed, 7);
+    BOOL hit; Vector3 hitCoords; Vector3 surfaceNormal; Entity targetEntity;
+    GAMEPLAY::GET_SHAPE_TEST_RESULT(raycast, &hit, &hitCoords, &surfaceNormal, &targetEntity);
+
+    if (hit && ENTITY::DOES_ENTITY_EXIST(targetEntity))
+    {
+        if (ENTITY::IS_ENTITY_A_PED(targetEntity))
+        {
+            PED::SET_PED_TO_RAGDOLL(targetEntity, 2000, 2000, 0, true, true, false);
+            ENTITY::APPLY_FORCE_TO_ENTITY(targetEntity, 1, forwardVec.x * 60.0f, forwardVec.y * 60.0f, forwardVec.z * 35.0f, 0.0f, 0.0f, 0.0f, 0, false, true, true, true, true);
+        }
+        else if (ENTITY::IS_ENTITY_A_VEHICLE(targetEntity))
+        {
+            ENTITY::APPLY_FORCE_TO_ENTITY(targetEntity, 1, forwardVec.x * 120.0f, forwardVec.y * 120.0f, forwardVec.z * 70.0f, 0.0f, 0.0f, 0.5f, 0, false, true, true, true, true);
+        }
+        FIRE::START_ENTITY_FIRE(targetEntity);
+    }
+}
 
 void UpdateSupermanPhysics()
 {
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     if (ENTITY::IS_ENTITY_DEAD(playerPed)) return;
 
-    if (CONTROLS::IS_CONTROL_JUST_PRESSED(0, 22)) 
+    if (CONTROLS::IS_CONTROL_JUST_PRESSED(0, 22)) // Пробел
     {
         g_isFlying = !g_isFlying;
         if (!g_isFlying)
@@ -44,7 +87,7 @@ void UpdateSupermanPhysics()
 
     float forwardInput = CONTROLS::GET_CONTROL_NORMAL(0, 32) - CONTROLS::GET_CONTROL_NORMAL(0, 33); 
     float turnInput = CONTROLS::GET_CONTROL_NORMAL(0, 34) - CONTROLS::GET_CONTROL_NORMAL(0, 35);    
-    bool isBoosting = CONTROLS::IS_CONTROL_PRESSED(0, 21); 
+    bool isBoosting = CONTROLS::IS_CONTROL_PRESSED(0, 21); // Shift
 
     Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
     float pitch = camRot.x * 0.0174532925f;
@@ -67,14 +110,8 @@ void UpdateSupermanPhysics()
     g_currentSpeed += acceleration * GAMEPLAY::GET_FRAME_TIME();
     if (g_currentSpeed < 0.0f) g_currentSpeed = 0.0f;
 
-    ENTITY::SET_ENTITY_VELOCITY(
-        playerPed, 
-        flightDirection.x * g_currentSpeed, 
-        flightDirection.y * g_currentSpeed, 
-        flightDirection.z * g_currentSpeed
-    );
+    ENTITY::SET_ENTITY_VELOCITY(playerPed, flightDirection.x * g_currentSpeed, flightDirection.y * g_currentSpeed, flightDirection.z * g_currentSpeed);
 
-    // Исправлено: в старых версиях SDK тряска камеры вызывалась через пространство GAMEPLAY
     if (g_currentSpeed >= SOUND_SPEED && isBoosting)
     {
         Vector3 coords = ENTITY::GET_ENTITY_COORDS(playerPed, true);
@@ -90,10 +127,5 @@ void UpdateSupermanPhysics()
 
     float normalizedSpeed = (std::max)(0.0f, g_currentSpeed / SOUND_SPEED);
     Vector3 pCoords = ENTITY::GET_ENTITY_COORDS(playerPed, true);
-    GRAPHICS::DRAW_MARKER(
-        1, pCoords.x, pCoords.y, pCoords.z - 1.0f, 
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
-        2.0f, 2.0f, 0.5f, 255, 0, 0, (int)(normalizedSpeed * 255), 
-        false, true, 2, false, nullptr, nullptr, false
-    );
+    GRAPHICS::DRAW_MARKER(1, pCoords.x, pCoords.y, pCoords.z - 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 2.0f, 0.5f, 255, 0, 0, (int)(normalizedSpeed * 255), false, true, 2, false, nullptr, nullptr, false);
 }
