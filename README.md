@@ -28,7 +28,3 @@ Build requirements:
 - Windows GTA V Legacy
 
 GitHub Actions is included as a build template. The repository must contain the ScriptHookV SDK files according to their license/redistribution terms.
-
-
-## Full abilities build
-Flight, boost effects, super speed/jump, heat vision, freeze breath, super breath, ground pound, grab/carry/throw, thunder clap, sonic boom, solar flare, and X-ray/super-hearing are implemented in the native ASI build.

@@ -15,10 +15,10 @@ Important:
 Build against the ScriptHookV SDK already used by this project.
 
 
-IMPROVED FLIGHT PHYSICS
-- Real frame delta time instead of a fixed 0.016s step.
-- Acceleration-based flight with smooth braking.
-- Quadratic aerodynamic drag and speed limiting.
-- Boost uses higher acceleration and higher maximum speed.
-- Boost adds looping exhaust particles, pulse bursts and camera shake at high speed.
-- Shift boost works while holding either Shift key; the menu Boost toggle remains supported.
+FIXED BUILD
+- Replaced broken src/main.cpp with balanced, compilable source.
+- Added <cmath> and corrected GAMEPLAY::GET_GAME_TIMER().
+- Flight/boost physics is applied directly to the GTA entity.
+- Added boost visual light/flame/smoke effects.
+- Added heat vision, freeze breath, super breath, ground pound, sonic boom and solar flare handlers.
+- Kept ScriptHookV.lib and User32.lib linkage in Superman.vcxproj.
