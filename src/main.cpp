@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include <windows.h>
 #include <cmath>
 #include <algorithm>
@@ -10,6 +11,9 @@
 
 static HMODULE g_module = nullptr;
 static SupermanController g_superman;
+
+static inline float MinF(float a, float b) { return (a < b) ? a : b; }
+static inline float MaxF(float a, float b) { return (a > b) ? a : b; }
 
 static bool g_menuOpen = false;
 static int g_selected = 0;
@@ -284,7 +288,7 @@ static void StopFlightAnimation(Ped ped)
         (char*)FLIGHT_ANIM,
         3))
     {
-        TASK::STOP_ANIM_TASK(
+        AI::STOP_ANIM_TASK(
             ped,
             (char*)FLIGHT_DICT,
             (char*)FLIGHT_ANIM,
@@ -315,7 +319,7 @@ static void UpdateFlightAnimation(Ped ped)
     {
         // Vanilla GTA V free-flight pose. It replaces the normal running
         // animation while the entity is being driven through the air.
-        TASK::TASK_PLAY_ANIM(
+        AI::TASK_PLAY_ANIM(
             ped,
             (char*)FLIGHT_DICT,
             (char*)FLIGHT_ANIM,
@@ -349,7 +353,7 @@ static void BoostEffect(Ped ped, bool active, float speed)
         return;
 
     const float intensity =
-        std::min(3.0f, 0.45f + speed / 85.0f);
+        MinF(3.0f, 0.45f + speed / 85.0f);
 
     Vector3 rear;
     rear.x = pos.x - forward.x * 1.5f;
@@ -389,7 +393,7 @@ static void BoostEffect(Ped ped, bool active, float speed)
 
     if (speed > 180.0f)
         CAM::SET_GAMEPLAY_CAM_SHAKE_AMPLITUDE(
-            std::min(0.35f, 0.04f + speed / 1000.0f)
+            MinF(0.35f, 0.04f + speed / 1000.0f)
         );
 }
 
@@ -519,7 +523,7 @@ static void FreezeBreath(Ped ped)
         dz /= dist;
 
         float dot = f.x * dx + f.y * dy + f.z * dz;
-        dot = std::max(-1.0f, std::min(1.0f, dot));
+        dot = MaxF(-1.0f, MinF(1.0f, dot));
 
         float angle =
             std::acos(dot) * 57.2957795f;
@@ -633,7 +637,6 @@ static void UpdateXRay(Ped player, bool active)
                 p.x, p.y, p.z + 1.0f,
                 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f,
                 0.22f, 0.22f, 0.22f,
                 80, 210, 255, 180,
                 false, false, 2, false,
@@ -672,8 +675,8 @@ static void GroundPoundImpact(Ped ped)
     GRAPHICS::DRAW_LIGHT_WITH_RANGE(
         pos.x, pos.y, pos.z,
         255, 255, 255,
-        std::min(20.0f, 8.0f + impactSpeed * 0.15f),
-        std::min(65.0f, 25.0f + impactSpeed * 0.45f)
+        MinF(20.0f, 8.0f + impactSpeed * 0.15f),
+        MinF(65.0f, 25.0f + impactSpeed * 0.45f)
     );
 
     int handles[256] = {};
@@ -704,7 +707,7 @@ static void GroundPoundImpact(Ped ped)
             continue;
 
         float falloff = 1.0f - dist / radius;
-        float impulse = std::min(
+        float impulse = MinF(
             180.0f,
             20.0f + energy * 0.035f * falloff
         );
@@ -1183,7 +1186,7 @@ static void UpdateFlight(Ped ped, float dt)
 
     currentLean +=
         (targetLean - currentLean) *
-        std::min(
+        MinF(
             1.0f,
             g_superman.leanSpeed * dt
         );
