@@ -57,7 +57,7 @@
       </AdditionalLibraryDirectories>
 
       <AdditionalDependencies>
-        ScriptHookV.lib;
+        ScriptHookV.lib;User32.lib;
         %(AdditionalDependencies)
       </AdditionalDependencies>
 
