@@ -2,9 +2,11 @@
 #define NOMINMAX
 #include <cmath>
 
+// Используем только базовый заголовок типов, нативы придут из cpp
+#include "ScriptHookV/types.h"
+
 inline void TriggerHeatVisionJulioNIB()
 {
-    // playerPed получает ID игрока напрямую через глобальный натив
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     
     if (!CONTROLS::IS_CONTROL_PRESSED(0, 24)) return;
