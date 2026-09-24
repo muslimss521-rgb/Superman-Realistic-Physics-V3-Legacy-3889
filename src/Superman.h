@@ -1,7 +1,10 @@
 #pragma once
 #define NOMINMAX
 #include <windows.h>
+
+// Подключаем SDK строго здесь один раз на весь проект
 #include "ScriptHookV/types.h"
+#include "ScriptHookV/natives.h"
 
 class Superman 
 {
