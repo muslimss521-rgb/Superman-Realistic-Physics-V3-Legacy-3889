@@ -1,17 +1,12 @@
 #pragma once
 #define NOMINMAX
-#include <windows.h>
 #include <cmath>
-
-// Подключаем типы ScriptHookV SDK
-#include "ScriptHookV/types.h"
-#include "ScriptHookV/natives.h"
 
 inline void TriggerHeatVisionJulioNIB()
 {
+    // playerPed получает ID игрока напрямую через глобальный натив
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     
-    // В старых SDK проверка кнопок идет через CONTROLS
     if (!CONTROLS::IS_CONTROL_PRESSED(0, 24)) return;
 
     Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
@@ -32,7 +27,6 @@ inline void TriggerHeatVisionJulioNIB()
 
     GRAPHICS::DRAW_LIGHT_WITH_RANGE(camCoord.x, camCoord.y, camCoord.z, 255, 0, 0, 30.0f, 15.0f);
 
-    // В legacy SDK ShapeTest выполнялся через нативы GAMEPLAY
     int raycast = GAMEPLAY::START_SHAPE_TEST_RAY(
         camCoord.x, camCoord.y, camCoord.z, 
         endCoords.x, endCoords.y, endCoords.z, 
