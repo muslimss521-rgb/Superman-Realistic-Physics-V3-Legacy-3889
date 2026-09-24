@@ -147,7 +147,7 @@ static void BoostEffect(Ped ped, bool active, float speed)
     if (active)
     {
         const float intensity =
-            std::min(2.8f, 0.45f + speed / 90.0f);
+            (std::min)(2.8f, 0.45f + speed / 90.0f);
 
         Vector3 rear;
         rear.x = pos.x - forward.x * 1.5f;
@@ -546,9 +546,9 @@ static void UpdateFlight(Ped ped, float dt)
         ? g_superman.boostAcceleration
         : g_superman.acceleration;
 
-    float response = std::min(
+    float response = (std::min)(
         1.0f,
-        std::max(0.01f, acceleration * dt / 25.0f)
+        (std::max)(0.01f, acceleration * dt / 25.0f)
     );
 
     Vector3 next;
