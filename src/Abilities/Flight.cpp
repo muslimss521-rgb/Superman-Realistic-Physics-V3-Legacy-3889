@@ -1,6 +1,7 @@
 #include "Flight.h"
 #include "../Input.h"
 #include "main.h"
+#include "natives.h"
 #include <cmath>
 
 namespace Flight
@@ -47,9 +48,9 @@ namespace Flight
         if (!ENTITY::DOES_ENTITY_EXIST(ped))
             return;
 
-        // The SDK used by this project does not provide
+        // The SDK used by this project does not expose
         // GET_GAMEPLAY_CAM_FORWARD_VECTOR / RIGHT_VECTOR.
-        // Build the camera basis from GET_GAMEPLAY_CAM_ROT instead.
+        // Calculate both vectors from the available camera rotation native.
         Vector3 rot = CAM::GET_GAMEPLAY_CAM_ROT(2);
 
         const float degToRad = 0.017453292519943295769f;
