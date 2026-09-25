@@ -28,16 +28,26 @@ void TriggerHeatVisionJulioNIB()
     nativePush(24);
     if (!*reinterpret_cast<BOOL*>(nativeCall())) return;
 
-    // Читаем Vector3 структуры через reinterpret_cast адреса буфера (исправляет ошибку C2440)
-    nativeInit(0x837765A2533ECE65); // CAM::GET_GAMEPLAY_CAM_ROT
+    float camRotX, camRotY, camRotZ;
+    float camCoordX, camCoordY, camCoordZ;
+
+    // CAM::GET_GAMEPLAY_CAM_ROT
+    nativeInit(0x837765A2533ECE65); 
     nativePush(2);
     Vector3 camRot = *reinterpret_cast<Vector3*>(nativeCall());
+    camRotX = camRot.x;
+    camRotY = camRot.y;
+    camRotZ = camRot.z;
 
-    nativeInit(0xFAAA931A783AEC66); // CAM::GET_GAMEPLAY_CAM_COORD
+    // CAM::GET_GAMEPLAY_CAM_COORD
+    nativeInit(0xFAAA931A783AEC66); 
     Vector3 camCoord = *reinterpret_cast<Vector3*>(nativeCall());
+    camCoordX = camCoord.x;
+    camCoordY = camCoord.y;
+    camCoordZ = camCoord.z;
     
-    float pitch = camRot.x * 0.0174532925f;
-    float yaw = camRot.z * 0.0174532925f;
+    float pitch = camRotX * 0.0174532925f;
+    float yaw = camRotZ * 0.0174532925f;
     
     Vector3 forwardVec;
     forwardVec.x = -sin(yaw) * cos(pitch);
@@ -45,20 +55,20 @@ void TriggerHeatVisionJulioNIB()
     forwardVec.z = sin(pitch);
     
     Vector3 endCoords;
-    endCoords.x = camCoord.x + forwardVec.x * 100.0f;
-    endCoords.y = camCoord.y + forwardVec.y * 100.0f;
-    endCoords.z = camCoord.z + forwardVec.z * 100.0f;
+    endCoords.x = camCoordX + forwardVec.x * 100.0f;
+    endCoords.y = camCoordY + forwardVec.y * 100.0f;
+    endCoords.z = camCoordZ + forwardVec.z * 100.0f;
 
     // GRAPHICS::DRAW_LIGHT_WITH_RANGE(...)
     nativeInit(0x66C4C50F33CED8E8);
-    nativePush(camCoord.x); nativePush(camCoord.y); nativePush(camCoord.z);
+    nativePush(camCoordX); nativePush(camCoordY); nativePush(camCoordZ);
     nativePush(255); nativePush(0); nativePush(0);
     nativePush(30.0f); nativePush(15.0f);
     nativeCall();
 
     // GAMEPLAY::START_SHAPE_TEST_RAY(...)
     nativeInit(0x6A2924E9273DE2E6);
-    nativePush(camCoord.x); nativePush(camCoord.y); nativePush(camCoord.z);
+    nativePush(camCoordX); nativePush(camCoordY); nativePush(camCoordZ);
     nativePush(endCoords.x); nativePush(endCoords.y); nativePush(endCoords.z);
     nativePush(-1); nativePush(playerPed); nativePush(7);
     int raycast = *reinterpret_cast<int*>(nativeCall());
@@ -261,5 +271,3 @@ void UpdateSupermanPhysics()
     // GRAPHICS::DRAW_MARKER(...)
     nativeInit(0x3201E3E66F1CEDE2);
     nativePush(1); nativePush(pCoords.x); nativePush(pCoords.y); nativePush(pCoords.z - 1.0f);
-    nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f); nativePush(0.0f);
-    nativePush(2.0f); nativePush(2.0f); nativePush(0.5f);
