@@ -1,24 +1,42 @@
 #include "Input.h"
-#include "main.h"
-#include "natives.h"
+#include <windows.h>
 
 namespace Input
 {
-    bool JustPressed(int c)
+    static bool KeyDown(int key)
     {
-        return CONTROLS::IS_CONTROL_JUST_PRESSED(0, c);
+        return (GetAsyncKeyState(key) & 0x8000) != 0;
     }
 
-    bool Pressed(int c)
+    bool Pressed(int key)
     {
-        return CONTROLS::IS_CONTROL_PRESSED(0, c);
+        return KeyDown(key);
     }
 
-    bool Forward() { return Pressed(32); } // W
-    bool Back()    { return Pressed(33); } // S
-    bool Left()    { return Pressed(34); } // A
-    bool Right()   { return Pressed(35); } // D
-    bool Up()      { return Pressed(22); } // Space
-    bool Down()    { return Pressed(36); } // Ctrl
-    bool Boost()   { return Pressed(21); } // Shift
+    bool JustPressed(int key)
+    {
+        static bool previous[256] = {};
+        const bool now = KeyDown(key);
+        const bool result = now && !previous[key];
+        previous[key] = now;
+        return result;
+    }
+
+    // Movement
+    bool Forward() { return KeyDown('W'); }
+    bool Back()    { return KeyDown('S'); }
+    bool Left()    { return KeyDown('A'); }
+    bool Right()   { return KeyDown('D'); }
+    bool Up()      { return KeyDown(VK_SPACE); }
+    bool Down()    { return KeyDown(VK_LCONTROL) || KeyDown(VK_RCONTROL); }
+    bool Boost()   { return KeyDown(VK_LSHIFT) || KeyDown(VK_RSHIFT); }
+
+    // Abilities
+    bool ToggleSuperman()   { return JustPressed('G'); }
+    bool ToggleFlight()     { return JustPressed('F'); }
+    bool SuperPunch()       { return JustPressed('R'); }
+    bool ToggleTargetLock() { return JustPressed('T'); }
+    bool EmergencyOff()     { return JustPressed('X'); }
+    bool ToggleHeatVision() { return JustPressed('H'); }
+    bool ToggleSuperSpeed() { return JustPressed('C'); }
 }
