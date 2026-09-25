@@ -1,6 +1,0 @@
-bin/
-build/
-.vs/
-*.user
-*.suo
-*.pdb
