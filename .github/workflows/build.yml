@@ -13,15 +13,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Build Release
-        shell: cmd
+      - name: Build
         run: msbuild Superman.vcxproj /p:Configuration=Release /p:Platform=x64 /m
 
-      - name: Upload ASI
+      - name: Verify
+        shell: pwsh
+        run: |
+          if (!(Test-Path "bin\Superman.asi")) {
+            Write-Error "Superman.asi was not produced."
+          }
+          Get-Item "bin\Superman.asi" | Format-List Name,Length,FullName
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          Copy-Item "bin\Superman.asi" "artifact\Superman.asi"
+
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Superman-ASI
-          path: bin/Superman.asi
+          name: Superman-Legacy-3889-v01
+          path: artifact\Superman.asi
