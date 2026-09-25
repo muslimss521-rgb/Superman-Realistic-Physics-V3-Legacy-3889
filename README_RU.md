@@ -1,33 +1,43 @@
-# Superman Legacy 3889 — v0.1
+# Superman — Final Architecture / GTA V Legacy 3889
 
-Первая реальная версия проекта: standalone C++ ASI без NIBSHDotNet.
+Standalone ScriptHookV ASI project. No NIBSHDotNet or NIBSHDotNet_loader.
 
-## Цель v0.1
+Implemented base:
+- master toggle
+- flight / hover / boost
+- vertical and camera-relative movement
+- emergency disable
+- super-speed toggle
+- target-lock module
+- heat-vision module
+- super-punch module
+- modular structure ready for animation, VFX, sound, PED and additional powers
 
-- ASI корректно загружается через ScriptHookV.
-- F3 — Superman ON/OFF.
-- F5 — Flight ON/OFF.
-- Полёт относительно камеры.
-- W/S — ускорение/торможение вперёд/назад.
-- A/D — боковое направление.
-- Space — вверх.
-- Ctrl — вниз.
-- Shift — Boost.
-- F8 — аварийно отключить полёт.
+Controls:
+F3 Superman ON/OFF
+F5 Flight
+W/S/A/D movement
+Space/Ctrl vertical
+Shift Boost
+F6 Super Punch
+F7 Target Lock
+F9 Heat Vision
+F10 Super Speed
+F8 Emergency OFF
 
-## Сборка
+Build with Visual Studio MSBuild x64 Release.
 
-Проект использует официальный ScriptHookV SDK, приложенный к проекту.
-Открыть `Superman.vcxproj` в Visual Studio и собрать `Release | x64`.
 
-Готовый файл:
-`bin/Superman.asi`
+## Анимации полёта
 
-В GTA V:
-`Grand Theft Auto V/Superman.asi`
+В проект добавлен `src/Abilities/FlightAnimation.cpp/.h`.
 
-Для запуска также нужен обычный `dinput8.dll`/ScriptHookV ASI loader.
+При включённом полёте используются встроенные GTA V анимации свободного падения:
+- `free_idle` — зависание;
+- `free_forward` — полёт вперёд;
+- `free_backward` — движение назад;
+- `free_left` / `free_right` — боковой полёт.
 
-## Важно
+При Shift (Boost) скорость проигрывания полётной анимации повышается. Внешние `.ycd` для этого варианта не требуются.
 
-Это собственная реализация. Код JulioNIB не используется и не копируется.
+Это именно GTA V-совместимый слой анимаций. Unreal `.uasset` из ManOfSteel напрямую в ASI не переносится.
