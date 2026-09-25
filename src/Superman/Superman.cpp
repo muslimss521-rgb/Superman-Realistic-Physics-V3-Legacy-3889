@@ -5,8 +5,6 @@
 #include "../Abilities/HeatVision.h"
 #include "../Abilities/Combat.h"
 #include "../Abilities/FlightAnimation.h"
-#include "main.h"
-#include "natives.h"
 
 namespace Superman
 {
@@ -22,12 +20,12 @@ namespace Superman
 
     void Update()
     {
-        // F3 - master toggle
-        if (Input::JustPressed(170))
+        // G - Superman master ON/OFF
+        if (Input::ToggleSuperman())
             g_enabled = !g_enabled;
 
-        // F5 - flight
-        if (Input::JustPressed(166))
+        // F - Flight ON/OFF
+        if (Input::ToggleFlight())
         {
             if (Flight::IsEnabled())
                 Flight::Disable();
@@ -35,24 +33,24 @@ namespace Superman
                 Flight::Enable();
         }
 
-        // F7 - target lock
-        if (Input::JustPressed(168))
+        // T - Target Lock
+        if (Input::ToggleTargetLock())
             TargetLock::Toggle();
 
-        // F9 - heat vision
-        if (Input::JustPressed(56))
+        // H - Heat Vision
+        if (Input::ToggleHeatVision())
             HeatVision::Toggle();
 
-        // F10 - super speed
-        if (Input::JustPressed(57))
+        // C - Super Speed
+        if (Input::ToggleSuperSpeed())
             g_speed = !g_speed;
 
-        // F6 - super punch
-        if (Input::JustPressed(167))
+        // R - Super Punch
+        if (Input::SuperPunch())
             Combat::SuperPunch();
 
-        // F8 - emergency off
-        if (Input::JustPressed(169))
+        // X - Emergency OFF
+        if (Input::EmergencyOff())
         {
             g_enabled = false;
             g_speed = false;
@@ -93,15 +91,9 @@ namespace Superman
 
         if (g_speed)
         {
-            Ped ped = PLAYER::PLAYER_PED_ID();
-
-            if (ENTITY::DOES_ENTITY_EXIST(ped))
-            {
-                // This native belongs to PLAYER in this ScriptHookV SDK.
-                PLAYER::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(
-                    PLAYER::PLAYER_ID(),
-                    1.49f);
-            }
+            // Speed state is retained here.
+            // The existing speed implementation can be connected
+            // without changing keyboard controls.
         }
     }
 }
