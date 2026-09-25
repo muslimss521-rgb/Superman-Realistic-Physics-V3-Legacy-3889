@@ -1,7 +1,6 @@
 #include "Flight.h"
 #include "../Input.h"
 #include "main.h"
-#include <cmath>
 
 namespace Flight
 {
@@ -17,6 +16,14 @@ namespace Flight
     {
         g_flying = false;
         g_boost = false;
+
+        Ped ped = PLAYER::PLAYER_PED_ID();
+
+        if (ENTITY::DOES_ENTITY_EXIST(ped))
+        {
+            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, true);
+            ENTITY::SET_ENTITY_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
+        }
     }
 
     void SetBoost(bool enabled)
@@ -29,12 +36,16 @@ namespace Flight
         return g_flying;
     }
 
-    void Update(Ped ped)
+    void Update()
     {
-        if (!g_flying || !ENTITY::DOES_ENTITY_EXIST(ped))
+        if (!g_flying)
             return;
 
-        Vector3 pos = ENTITY::GET_ENTITY_COORDS(ped, true);
+        Ped ped = PLAYER::PLAYER_PED_ID();
+
+        if (!ENTITY::DOES_ENTITY_EXIST(ped))
+            return;
+
         Vector3 forward = CAM::GET_GAMEPLAY_CAM_FORWARD_VECTOR();
         Vector3 right = CAM::GET_GAMEPLAY_CAM_RIGHT_VECTOR();
 
