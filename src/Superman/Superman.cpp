@@ -6,6 +6,7 @@
 #include "../Abilities/Combat.h"
 #include "../Abilities/FlightAnimation.h"
 #include "main.h"
+#include "natives.h"
 
 namespace Superman
 {
@@ -96,7 +97,8 @@ namespace Superman
 
             if (ENTITY::DOES_ENTITY_EXIST(ped))
             {
-                ENTITY::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(
+                // This native belongs to PLAYER in this ScriptHookV SDK.
+                PLAYER::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(
                     PLAYER::PLAYER_ID(),
                     1.49f);
             }
