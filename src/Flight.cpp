@@ -8,14 +8,13 @@ namespace
 {
     bool g_flying = false;
     bool g_lastF3 = false;
+    bool g_lastE = false;
 
-    // Newton-style flight parameters.
     const float GRAVITY = 9.81f;
     const float THRUST = 30.0f;
     const float BOOST_THRUST = 75.0f;
     const float MAX_SPEED = 55.0f;
     const float BOOST_MAX_SPEED = 120.0f;
-
     const float DRAG = 0.045f;
     const float HOVER_VERTICAL_DAMP = 2.5f;
     const float TURN_SPEED = 5.0f;
@@ -54,6 +53,19 @@ namespace
         return result;
     }
 
+    bool KeyDown(int vk)
+    {
+        return (GetAsyncKeyState(vk) & 0x8000) != 0;
+    }
+
+    bool PressedOnce(int vk, bool& previous)
+    {
+        bool current = KeyDown(vk);
+        bool pressed = current && !previous;
+        previous = current;
+        return pressed;
+    }
+
     Vector3 CameraForward()
     {
         Vector3 rotation = CAM::GET_GAMEPLAY_CAM_ROT(2);
@@ -61,7 +73,6 @@ namespace
         const float pi = 3.14159265359f;
         float pitch = rotation.x * pi / 180.0f;
         float yaw = rotation.z * pi / 180.0f;
-
         float cp = std::cos(pitch);
 
         Vector3 forward;
@@ -82,19 +93,6 @@ namespace
         right.z = 0.0f;
 
         return Normalize(right);
-    }
-
-    bool KeyDown(int vk)
-    {
-        return (GetAsyncKeyState(vk) & 0x8000) != 0;
-    }
-
-    bool PressedOnce(int vk, bool& previous)
-    {
-        bool current = KeyDown(vk);
-        bool pressed = current && !previous;
-        previous = current;
-        return pressed;
     }
 
     void SetFlightState(Ped ped, bool enabled)
@@ -124,16 +122,12 @@ namespace
         float yaw = std::atan2(velocity.y, velocity.x) * 180.0f / pi - 90.0f;
         float horizontal = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
         float pitch = std::atan2(velocity.z, horizontal) * 180.0f / pi;
-
         float roll = -inputX * LEAN_ANGLE;
 
         Vector3 current = ENTITY::GET_ENTITY_ROTATION(ped, 2);
-
         float factor = Clamp(TURN_SPEED * dt, 0.0f, 1.0f);
 
-        float targetYaw = yaw;
-        float deltaYaw = targetYaw - current.z;
-
+        float deltaYaw = yaw - current.z;
         while (deltaYaw > 180.0f) deltaYaw -= 360.0f;
         while (deltaYaw < -180.0f) deltaYaw += 360.0f;
 
@@ -151,6 +145,7 @@ namespace Flight
     {
         g_flying = false;
         g_lastF3 = false;
+        g_lastE = false;
     }
 
     void Update()
@@ -160,19 +155,16 @@ namespace Flight
         if (!ENTITY::DOES_ENTITY_EXIST(ped))
             return;
 
+        // E is the primary toggle because it is reliably accessible
+        // through the physical keyboard in GameHub.
+        bool toggle = PressedOnce('E', g_lastE);
+
+        // Keep F3 as an additional toggle when the host forwards F3.
         if (PressedOnce(VK_F3, g_lastF3))
-        {
+            toggle = true;
+
+        if (toggle)
             SetFlightState(ped, !g_flying);
-
-            if (!g_flying)
-            {
-                Vector3 v = ENTITY::GET_ENTITY_VELOCITY(ped);
-
-                // Keep horizontal inertia, but remove dangerous vertical speed on landing.
-                v.z = 0.0f;
-                ENTITY::SET_ENTITY_VELOCITY(ped, v.x, v.y, v.z);
-            }
-        }
 
         if (!g_flying)
             return;
@@ -183,7 +175,6 @@ namespace Flight
         float dt = GAMEPLAY::GET_FRAME_TIME();
         dt = Clamp(dt, 0.001f, 0.05f);
 
-        // W/S = forward/back, A/D = lateral steering.
         float forwardInput = 0.0f;
         if (KeyDown('W')) forwardInput += 1.0f;
         if (KeyDown('S')) forwardInput -= 1.0f;
@@ -199,11 +190,9 @@ namespace Flight
         bool boosting = KeyDown(VK_LSHIFT) || KeyDown(VK_RSHIFT);
 
         Vector3 velocity = ENTITY::GET_ENTITY_VELOCITY(ped);
-
         Vector3 forward = CameraForward();
         Vector3 right = CameraRight();
 
-        // Newton's second law: acceleration from thrust.
         float thrust = boosting ? BOOST_THRUST : THRUST;
 
         Vector3 acceleration;
@@ -211,21 +200,18 @@ namespace Flight
         acceleration.y = 0.0f;
         acceleration.z = -GRAVITY;
 
-        // Flight thrust follows the camera direction.
         acceleration.x += forward.x * thrust * forwardInput;
         acceleration.y += forward.y * thrust * forwardInput;
         acceleration.z += forward.z * thrust * forwardInput;
 
-        // Lateral control.
         const float sideThrust = 18.0f;
         acceleration.x += right.x * sideThrust * sideInput;
         acceleration.y += right.y * sideThrust * sideInput;
 
-        // Explicit vertical thrust for takeoff/landing control.
         const float verticalThrust = 28.0f;
         acceleration.z += verticalThrust * verticalInput;
 
-        // Hover stabilization: counter gravity and damp vertical motion.
+        // Stable hover when no vertical input is held.
         if (verticalInput == 0.0f)
         {
             acceleration.z += GRAVITY;
@@ -237,13 +223,12 @@ namespace Flight
         if (speed > 0.01f)
         {
             float dragScale = DRAG * speed;
-
             acceleration.x -= velocity.x * dragScale;
             acceleration.y -= velocity.y * dragScale;
             acceleration.z -= velocity.z * dragScale;
         }
 
-        // Integrate v = v + a * dt.
+        // Newton integration: v = v + a * dt.
         velocity.x += acceleration.x * dt;
         velocity.y += acceleration.y * dt;
         velocity.z += acceleration.z * dt;
