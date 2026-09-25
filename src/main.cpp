@@ -19,7 +19,8 @@ static inline float MaxF(float a, float b) { return (a > b) ? a : b; }
 static bool g_menuOpen = false;
 static int g_selected = 0;
 
-static bool lastMenu = false;\nstatic bool lastF3 = false;
+static bool lastMenu = false;
+static bool lastF3 = false;
 static bool lastF5 = false;
 static bool lastBack = false;
 static bool lastUp = false;
