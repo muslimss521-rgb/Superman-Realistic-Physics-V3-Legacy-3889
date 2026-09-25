@@ -1105,26 +1105,75 @@ static void UpdateMenu(Ped ped)
         ActivateMenu(ped);
 }
 
+static float g_flightLean = 0.0f;
+static float g_flightPitch = 0.0f;
+
+static void ApplyFlightForce(Ped ped, const Vector3& force)
+{
+    // ForceType 1 = continuous force. We deliberately use F = m * a here,
+    // instead of teleporting the PED or directly overwriting its velocity.
+    ENTITY::APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(
+        ped,
+        1,
+        force.x,
+        force.y,
+        force.z,
+        false,
+        true,
+        true,
+        false
+    );
+}
+
 static void UpdateFlight(Ped ped, float dt)
 {
     if (!g_superman.enabled ||
         !g_superman.abilities.state.flight)
     {
         StopFlightAnimation(ped);
+        g_flightLean = 0.0f;
+        g_flightPitch = 0.0f;
         return;
     }
 
-    // Unity reference port:
-    // useGravity = true, flyForce = 30, maxSpeed = 50,
-    // boostMultiplier = 2.5, airDrag = 1, stopDrag = 5,
-    // leanAmount = 35, leanSpeed = 5.
+    if (!ENTITY::DOES_ENTITY_EXIST(ped))
+        return;
+
+    // ------------------------------------------------------------
+    // SUPERMAN FLIGHT MODEL
+    // ------------------------------------------------------------
+    // The character remains subject to GTA gravity. Every frame we apply
+    // physical forces instead of moving him with SET_ENTITY_COORDS or
+    // directly forcing a target position. This gives real inertia:
+    //       F = m * a
+    //       p = m * v
+    //       E = 1/2 * m * v^2
+    // and makes acceleration/deceleration depend on the current velocity.
+    //
+    // The supplied Unity reference is kept as the design baseline:
+    // flyForce=30, maxSpeed=50, boost=2.5, airDrag=1, stopDrag=5.
+    // The GTA implementation adds Newton-style mass, lift and quadratic
+    // air resistance on top of that baseline.
+    // ------------------------------------------------------------
+
     PED::SET_PED_CAN_RAGDOLL(ped, false);
     ENTITY::SET_ENTITY_HAS_GRAVITY(ped, true);
 
     UpdateFlightAnimation(ped);
 
+    float frame = dt;
+    if (frame < 0.008f) frame = 0.008f;
+    if (frame > 0.050f) frame = 0.050f;
+
+    const float mass =
+        (g_superman.mass > 1.0f)
+        ? g_superman.mass
+        : 95.0f;
+
     Vector3 forward = CameraForward();
 
+    // Horizontal right vector. We keep vertical steering separate so that
+    // A/D does not unexpectedly push Superman up or down.
     Vector3 right;
     right.x = forward.y;
     right.y = -forward.x;
@@ -1139,123 +1188,287 @@ static void UpdateFlight(Ped ped, float dt)
         right.y /= rightLen;
     }
 
-    float fwd = 0.0f;
-    float side = 0.0f;
-    float vertical = 0.0f;
+    float fwdInput = 0.0f;
+    float sideInput = 0.0f;
+    float verticalInput = 0.0f;
 
-    if (Down(g_keys.forward))  fwd += 1.0f;
-    if (Down(g_keys.backward)) fwd -= 1.0f;
-    if (Down(g_keys.right))    side += 1.0f;
-    if (Down(g_keys.left))     side -= 1.0f;
-    if (Down(g_keys.up))       vertical += 1.0f;
-    if (Down(g_keys.down))     vertical -= 1.0f;
+    if (Down(g_keys.forward))  fwdInput += 1.0f;
+    if (Down(g_keys.backward)) fwdInput -= 1.0f;
+    if (Down(g_keys.right))    sideInput += 1.0f;
+    if (Down(g_keys.left))     sideInput -= 1.0f;
+    if (Down(g_keys.up))       verticalInput += 1.0f;
+    if (Down(g_keys.down))     verticalInput -= 1.0f;
 
-    const bool boost = Down(g_keys.boost) ||
-                       g_superman.abilities.state.boost;
+    const bool boosting =
+        Down(g_keys.boost) ||
+        g_superman.abilities.state.boost;
 
-    const float maxSpeed = boost
-        ? g_superman.flightSpeed * g_superman.boostMultiplier
-        : g_superman.flightSpeed;
+    const float baseMaxSpeed =
+        (g_superman.flightSpeed > 1.0f)
+        ? g_superman.flightSpeed
+        : 50.0f;
 
-    const float accel = boost
-        ? g_superman.boostAcceleration
-        : g_superman.flightForce;
+    const float maxSpeed =
+        boosting
+        ? baseMaxSpeed * g_superman.boostMultiplier
+        : baseMaxSpeed;
 
-    Vector3 current = ENTITY::GET_ENTITY_VELOCITY(ped);
+    const float thrustAcceleration =
+        boosting
+        ? ((g_superman.boostAcceleration > 1.0f)
+            ? g_superman.boostAcceleration
+            : 75.0f)
+        : ((g_superman.flightForce > 1.0f)
+            ? g_superman.flightForce
+            : 30.0f);
 
-    // Air drag: stronger when no input, matching Unity's airDrag/stopDrag.
-    const float drag = (std::fabs(fwd) > 0.001f ||
-                        std::fabs(side) > 0.001f ||
-                        std::fabs(vertical) > 0.001f)
-        ? g_superman.airDrag
-        : g_superman.stopDrag;
+    Vector3 velocity = ENTITY::GET_ENTITY_VELOCITY(ped);
 
-    float dragFactor =
-        1.0f / (1.0f + drag * dt);
-
-    current.x *= dragFactor;
-    current.y *= dragFactor;
-    current.z *= dragFactor;
-
-    // Forward thrust.
-    if (fwd > 0.0f)
-    {
-        current.x += forward.x * accel * fwd * dt;
-        current.y += forward.y * accel * fwd * dt;
-        current.z += forward.z * accel * fwd * dt;
-    }
-    else if (fwd < 0.0f)
-    {
-        current.x += forward.x * accel * fwd * dt * 0.55f;
-        current.y += forward.y * accel * fwd * dt * 0.55f;
-        current.z += forward.z * accel * fwd * dt * 0.55f;
-    }
-
-    // Side and vertical control.
-    current.x += right.x * accel * side * dt * 0.75f;
-    current.y += right.y * accel * side * dt * 0.75f;
-    current.z += vertical * accel * dt * 0.75f;
-
-    // Unity's 90% lift compensation while actively flying forward.
-    if (fwd > 0.0f &&
-        std::sqrt(current.x * current.x +
-                  current.y * current.y +
-                  current.z * current.z) > 5.0f)
-    {
-        current.z += Physics::EarthGravity * 0.90f * dt;
-    }
-
-    float speed =
+    const float speed =
         std::sqrt(
-            current.x * current.x +
-            current.y * current.y +
-            current.z * current.z
+            velocity.x * velocity.x +
+            velocity.y * velocity.y +
+            velocity.z * velocity.z
         );
 
-    if (speed > maxSpeed)
+    // ------------------------------------------------------------
+    // 1. NEWTON GRAVITY + HOVER STABILIZER
+    // ------------------------------------------------------------
+    // GTA gravity pulls down continuously. When Superman is flying but the
+    // player gives no vertical command, he must produce approximately mg of
+    // lift to hover. A small velocity damping term prevents oscillation.
+    // This is why he can remain in the air instead of slowly falling.
+    const float gravity = Physics::EarthGravity;
+    const float gravityForce = mass * gravity;
+
+    float liftRatio = 1.0f;
+
+    // At forward flight speeds, the body can use aerodynamic lift. We still
+    // keep a small reserve of active lift so he does not suddenly drop when
+    // speed changes. At zero speed the active lift remains exactly enough to
+    // counter gravity, producing a stable cinematic hover.
+    if (fwdInput > 0.0f && speed > 8.0f)
     {
-        float scale = maxSpeed / speed;
-        current.x *= scale;
-        current.y *= scale;
-        current.z *= scale;
-        speed = maxSpeed;
+        float speedLift = speed / 55.0f;
+        if (speedLift > 1.0f) speedLift = 1.0f;
+        liftRatio = 0.90f + 0.10f * speedLift;
     }
 
-    ENTITY::SET_ENTITY_VELOCITY(
-        ped,
-        current.x,
-        current.y,
-        current.z
+    float liftForce = gravityForce * liftRatio;
+
+    // Vertical damping makes the hover behave like a controlled human-scale
+    // flight system rather than a frozen object.
+    const float verticalDamping = 2.4f;
+    float hoverCorrection =
+        -velocity.z * verticalDamping * mass;
+
+    // The correction is deliberately limited so it cannot create a sudden
+    // launch when entering flight mode.
+    const float maxHoverCorrection = gravityForce * 0.65f;
+    if (hoverCorrection > maxHoverCorrection)
+        hoverCorrection = maxHoverCorrection;
+    if (hoverCorrection < -maxHoverCorrection)
+        hoverCorrection = -maxHoverCorrection;
+
+    // Vertical input changes the desired acceleration. This is added on top
+    // of the gravity-cancelling hover force.
+    const float verticalAcceleration =
+        thrustAcceleration * 0.72f;
+
+    Vector3 totalForce(
+        0.0f,
+        0.0f,
+        liftForce + hoverCorrection +
+        verticalInput * mass * verticalAcceleration
     );
 
-    g_superman.velocity =
-        Vec3(current.x, current.y, current.z);
+    // ------------------------------------------------------------
+    // 2. FORWARD / BACKWARD THRUST
+    // ------------------------------------------------------------
+    // W applies a force in the camera direction. S applies a softer reverse
+    // force, preserving inertia instead of snapping the velocity backwards.
+    if (fwdInput > 0.0f)
+    {
+        totalForce.x += forward.x * mass * thrustAcceleration * fwdInput;
+        totalForce.y += forward.y * mass * thrustAcceleration * fwdInput;
+        totalForce.z += forward.z * mass * thrustAcceleration * fwdInput;
+    }
+    else if (fwdInput < 0.0f)
+    {
+        const float reverseAcceleration =
+            thrustAcceleration * 0.45f;
 
-    // Camera direction controls heading; A/D control visual bank.
-    float targetLean =
-        -side * g_superman.leanAmount;
+        totalForce.x += forward.x * mass * reverseAcceleration * fwdInput;
+        totalForce.y += forward.y * mass * reverseAcceleration * fwdInput;
+        totalForce.z += forward.z * mass * reverseAcceleration * fwdInput;
+    }
 
-    static float currentLean = 0.0f;
+    // ------------------------------------------------------------
+    // 3. SIDE FORCE
+    // ------------------------------------------------------------
+    // A/D is lateral thrust, not an instantaneous position change.
+    const float sideAcceleration =
+        thrustAcceleration * 0.60f;
 
-    currentLean +=
-        (targetLean - currentLean) *
-        MinF(
-            1.0f,
-            g_superman.leanSpeed * dt
+    totalForce.x += right.x * mass * sideAcceleration * sideInput;
+    totalForce.y += right.y * mass * sideAcceleration * sideInput;
+
+    // ------------------------------------------------------------
+    // 4. QUADRATIC AIR RESISTANCE
+    // ------------------------------------------------------------
+    // F_drag = 1/2 * rho * Cd * A * v^2.
+    // The coefficient is tuned for GTA's world scale rather than real SI
+    // air density, so the result remains controllable at game speeds.
+    float airDensity = 1.225f;
+    float dragCoefficient =
+        (std::fabs(fwdInput) > 0.001f ||
+         std::fabs(sideInput) > 0.001f ||
+         std::fabs(verticalInput) > 0.001f)
+        ? 0.42f
+        : 0.90f;
+
+    float referenceArea = 0.85f;
+
+    if (speed > 0.05f)
+    {
+        float dragMagnitude =
+            0.5f *
+            airDensity *
+            dragCoefficient *
+            referenceArea *
+            speed * speed;
+
+        // Scale the physical drag for GTA's velocity units.
+        dragMagnitude *= 0.095f;
+
+        totalForce.x -= velocity.x / speed * dragMagnitude;
+        totalForce.y -= velocity.y / speed * dragMagnitude;
+        totalForce.z -= velocity.z / speed * dragMagnitude;
+    }
+
+    // Additional controllable braking when the player completely releases
+    // the controls. This keeps the cinematic flight from drifting forever.
+    const bool noInput =
+        std::fabs(fwdInput) < 0.001f &&
+        std::fabs(sideInput) < 0.001f &&
+        std::fabs(verticalInput) < 0.001f;
+
+    if (noInput && speed > 0.05f)
+    {
+        const float brakingAcceleration =
+            (g_superman.stopDrag > 0.0f)
+            ? g_superman.stopDrag * 0.75f
+            : 3.0f;
+
+        totalForce.x -= velocity.x / speed * mass * brakingAcceleration;
+        totalForce.y -= velocity.y / speed * mass * brakingAcceleration;
+        totalForce.z -= velocity.z / speed * mass * brakingAcceleration;
+    }
+
+    // ------------------------------------------------------------
+    // 5. APPLY F = m * a
+    // ------------------------------------------------------------
+    ApplyFlightForce(ped, totalForce);
+
+    // Read the resulting velocity after the force application for visual
+    // orientation and effects. We do not overwrite it with SET_ENTITY_VELOCITY.
+    Vector3 actualVelocity = ENTITY::GET_ENTITY_VELOCITY(ped);
+
+    float actualSpeed =
+        std::sqrt(
+            actualVelocity.x * actualVelocity.x +
+            actualVelocity.y * actualVelocity.y +
+            actualVelocity.z * actualVelocity.z
         );
+
+    // ------------------------------------------------------------
+    // 6. SPEED LIMIT WITHOUT DESTROYING INERTIA
+    // ------------------------------------------------------------
+    // We only trim velocity if it exceeds the configured maximum. Normal
+    // acceleration/deceleration remains completely physics-driven.
+    if (actualSpeed > maxSpeed && actualSpeed > 0.001f)
+    {
+        float excess = actualSpeed - maxSpeed;
+        float correction =
+            MinF(excess, maxSpeed * 0.20f * frame);
+
+        Vector3 trim =
+            actualVelocity * (correction / actualSpeed);
+
+        ENTITY::APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(
+            ped,
+            1,
+            -trim.x * mass / frame,
+            -trim.y * mass / frame,
+            -trim.z * mass / frame,
+            false,
+            true,
+            true,
+            false
+        );
+
+        actualVelocity.x -= trim.x;
+        actualVelocity.y -= trim.y;
+        actualVelocity.z -= trim.z;
+        actualSpeed -= correction;
+    }
+
+    g_superman.velocity =
+        Vec3(
+            actualVelocity.x,
+            actualVelocity.y,
+            actualVelocity.z
+        );
+
+    // ------------------------------------------------------------
+    // 7. CINEMATIC BODY ORIENTATION
+    // ------------------------------------------------------------
+    // Follow the real velocity when moving. During a stationary hover use
+    // camera heading instead of trying to LookRotation a zero vector.
+    float targetLean =
+        -sideInput * g_superman.leanAmount;
+
+    g_flightLean +=
+        (targetLean - g_flightLean) *
+        MinF(1.0f, g_superman.leanSpeed * frame);
 
     Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
 
+    float targetPitch = camRot.x;
+
+    if (actualSpeed > 5.0f)
+    {
+        float horizontalSpeed =
+            std::sqrt(
+                actualVelocity.x * actualVelocity.x +
+                actualVelocity.y * actualVelocity.y
+            );
+
+        if (horizontalSpeed > 0.1f)
+        {
+            targetPitch =
+                -std::atan2(
+                    actualVelocity.z,
+                    horizontalSpeed
+                ) * 57.2957795f;
+        }
+    }
+
+    g_flightPitch +=
+        (targetPitch - g_flightPitch) *
+        MinF(1.0f, g_superman.turnSpeed * frame);
+
     ENTITY::SET_ENTITY_ROTATION(
         ped,
-        camRot.x,
-        currentLean,
+        g_flightPitch,
+        g_flightLean,
         camRot.z,
         2,
         true
     );
 
-    BoostEffect(ped, boost, speed);
+    // Boost effects remain tied to actual physical speed.
+    BoostEffect(ped, boosting, actualSpeed);
 }
 
 static void UpdateAbilities(Ped ped, float dt)
