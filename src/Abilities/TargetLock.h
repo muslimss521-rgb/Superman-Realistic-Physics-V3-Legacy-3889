@@ -1,5 +1,7 @@
 #pragma once
-namespace TargetLock {
+
+namespace TargetLock
+{
     void Toggle();
     bool Active();
     void Update();
