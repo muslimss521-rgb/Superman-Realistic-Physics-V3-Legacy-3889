@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include <windows.h>
 #include <cmath>
 #include <algorithm>
@@ -1275,12 +1274,12 @@ static void UpdateFlight(Ped ped, float dt)
     const float verticalAcceleration =
         thrustAcceleration * 0.72f;
 
-    Vector3 totalForce(
-        0.0f,
-        0.0f,
+    Vector3 totalForce{};
+    totalForce.x = 0.0f;
+    totalForce.y = 0.0f;
+    totalForce.z =
         liftForce + hoverCorrection +
-        verticalInput * mass * verticalAcceleration
-    );
+        verticalInput * mass * verticalAcceleration;
 
     // ------------------------------------------------------------
     // 2. FORWARD / BACKWARD THRUST
@@ -1392,8 +1391,11 @@ static void UpdateFlight(Ped ped, float dt)
         float correction =
             MinF(excess, maxSpeed * 0.20f * frame);
 
-        Vector3 trim =
-            actualVelocity * (correction / actualSpeed);
+        const float trimScale = correction / actualSpeed;
+        Vector3 trim{};
+        trim.x = actualVelocity.x * trimScale;
+        trim.y = actualVelocity.y * trimScale;
+        trim.z = actualVelocity.z * trimScale;
 
         ENTITY::APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(
             ped,
