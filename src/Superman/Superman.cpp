@@ -5,26 +5,27 @@
 #include "../Abilities/HeatVision.h"
 #include "../Abilities/Combat.h"
 #include "../Abilities/FlightAnimation.h"
+#include "main.h"
+#include "natives.h"
 
 namespace Superman
 {
-    static bool g_enabled = false;
+    // Enabled at game start so the player can test the abilities immediately.
+    static bool g_enabled = true;
     static bool g_speed = false;
 
     void Initialize()
     {
-        g_enabled = false;
+        g_enabled = true;
         g_speed = false;
         FlightAnimation::Initialize();
     }
 
     void Update()
     {
-        // G - Superman master ON/OFF
         if (Input::ToggleSuperman())
             g_enabled = !g_enabled;
 
-        // F - Flight ON/OFF
         if (Input::ToggleFlight())
         {
             if (Flight::IsEnabled())
@@ -33,28 +34,25 @@ namespace Superman
                 Flight::Enable();
         }
 
-        // T - Target Lock
         if (Input::ToggleTargetLock())
             TargetLock::Toggle();
 
-        // H - Heat Vision
         if (Input::ToggleHeatVision())
             HeatVision::Toggle();
 
-        // C - Super Speed
         if (Input::ToggleSuperSpeed())
             g_speed = !g_speed;
 
-        // R - Super Punch
         if (Input::SuperPunch())
             Combat::SuperPunch();
 
-        // X - Emergency OFF
         if (Input::EmergencyOff())
         {
             g_enabled = false;
             g_speed = false;
             Flight::Disable();
+            HeatVision::Disable();
+            TargetLock::Disable();
         }
 
         if (!g_enabled)
@@ -67,6 +65,10 @@ namespace Superman
 
             TargetLock::Update();
             HeatVision::Update();
+
+            PLAYER::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(
+                PLAYER::PLAYER_ID(), 1.0f);
+
             return;
         }
 
@@ -89,11 +91,8 @@ namespace Superman
         TargetLock::Update();
         HeatVision::Update();
 
-        if (g_speed)
-        {
-            // Speed state is retained here.
-            // The existing speed implementation can be connected
-            // without changing keyboard controls.
-        }
+        PLAYER::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(
+            PLAYER::PLAYER_ID(),
+            g_speed ? 1.49f : 1.0f);
     }
 }
