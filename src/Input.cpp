@@ -16,13 +16,15 @@ namespace Input
     bool JustPressed(int key)
     {
         static bool previous[256] = {};
+        if (key < 0 || key > 255)
+            return false;
+
         const bool now = KeyDown(key);
         const bool result = now && !previous[key];
         previous[key] = now;
         return result;
     }
 
-    // Movement
     bool Forward() { return KeyDown('W'); }
     bool Back()    { return KeyDown('S'); }
     bool Left()    { return KeyDown('A'); }
@@ -31,12 +33,11 @@ namespace Input
     bool Down()    { return KeyDown(VK_LCONTROL) || KeyDown(VK_RCONTROL); }
     bool Boost()   { return KeyDown(VK_LSHIFT) || KeyDown(VK_RSHIFT); }
 
-    // Abilities
-    bool ToggleSuperman()   { return JustPressed('G'); }
-    bool ToggleFlight()     { return JustPressed('F'); }
-    bool SuperPunch()       { return JustPressed('R'); }
-    bool ToggleTargetLock() { return JustPressed('T'); }
-    bool EmergencyOff()     { return JustPressed('X'); }
-    bool ToggleHeatVision() { return JustPressed('H'); }
-    bool ToggleSuperSpeed() { return JustPressed('C'); }
+    bool ToggleSuperman()    { return JustPressed('G'); }
+    bool ToggleFlight()      { return JustPressed('F'); }
+    bool SuperPunch()        { return JustPressed('R'); }
+    bool ToggleTargetLock()  { return JustPressed('T'); }
+    bool EmergencyOff()      { return JustPressed('X'); }
+    bool ToggleHeatVision()  { return JustPressed('H'); }
+    bool ToggleSuperSpeed()  { return JustPressed('C'); }
 }

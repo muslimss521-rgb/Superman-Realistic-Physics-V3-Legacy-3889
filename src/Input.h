@@ -5,7 +5,6 @@ namespace Input
     bool Pressed(int key);
     bool JustPressed(int key);
 
-    // Movement
     bool Forward();
     bool Back();
     bool Left();
@@ -14,7 +13,6 @@ namespace Input
     bool Down();
     bool Boost();
 
-    // Superman abilities - letter keys
     bool ToggleSuperman();    // G
     bool ToggleFlight();      // F
     bool SuperPunch();        // R
