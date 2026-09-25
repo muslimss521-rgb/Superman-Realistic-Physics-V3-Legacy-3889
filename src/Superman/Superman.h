@@ -1,5 +1,7 @@
 #pragma once
-namespace Superman {
+
+namespace Superman
+{
     void Initialize();
     void Update();
 }
