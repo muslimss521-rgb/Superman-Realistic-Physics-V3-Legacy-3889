@@ -1,51 +1,14 @@
 #include "Input.h"
-#include <windows.h>
+#include "main.h"
 
-namespace
-{
-    constexpr int KEY_COUNT = 10;
-
-    struct KeyState
-    {
-        int vk;
-        bool down;
-        bool previous;
-    };
-
-    KeyState g_keys[KEY_COUNT] =
-    {
-        { VK_F3,       false, false },
-        { VK_F5,       false, false },
-        { VK_SHIFT,    false, false },
-        { 'W',         false, false },
-        { 'S',         false, false },
-        { 'A',         false, false },
-        { 'D',         false, false },
-        { VK_SPACE,    false, false },
-        { VK_CONTROL,  false, false },
-        { VK_F8,       false, false }
-    };
-}
-
-namespace Input
-{
-    void Update()
-    {
-        for (auto& key : g_keys)
-        {
-            key.previous = key.down;
-            key.down = (GetAsyncKeyState(key.vk) & 0x8000) != 0;
-        }
-    }
-
-    bool Down(Key key)
-    {
-        return g_keys[static_cast<int>(key)].down;
-    }
-
-    bool Pressed(Key key)
-    {
-        const auto& k = g_keys[static_cast<int>(key)];
-        return k.down && !k.previous;
-    }
+namespace Input {
+    bool JustPressed(int c) { return PAD::IS_CONTROL_JUST_PRESSED(0, c); }
+    bool Pressed(int c) { return PAD::IS_CONTROL_PRESSED(0, c); }
+    bool Forward() { return Pressed(32); } // W
+    bool Back() { return Pressed(33); }    // S
+    bool Left() { return Pressed(34); }    // A
+    bool Right() { return Pressed(35); }   // D
+    bool Up() { return Pressed(22); }      // Space
+    bool Down() { return Pressed(36); }    // Ctrl
+    bool Boost() { return Pressed(21); }   // Shift
 }
