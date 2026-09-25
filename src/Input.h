@@ -1,7 +1,10 @@
 #pragma once
-namespace Input {
+
+namespace Input
+{
     bool JustPressed(int control);
     bool Pressed(int control);
+
     bool Forward();
     bool Back();
     bool Left();
