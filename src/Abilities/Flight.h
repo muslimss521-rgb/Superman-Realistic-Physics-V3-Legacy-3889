@@ -1,11 +1,8 @@
 #pragma once
-
-namespace Flight
-{
-    void Initialize();
+namespace Flight {
     void Enable();
     void Disable();
-    void Update(bool boost);
-
+    void SetBoost(bool enabled);
     bool IsEnabled();
+    void Update();
 }
