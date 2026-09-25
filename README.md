@@ -1,15 +1,24 @@
-# Superman Minimal ASI — GTA V Legacy 1.0.3889
+# Superman Flight — GTA V Legacy 1.0.3889
 
-Clean starting point.
+First flight-only build.
 
-Contains:
-- ScriptHookV SDK copied from the uploaded project
-- ScriptHookV.lib
-- Minimal native C++ ASI entry point
-- Visual Studio project
-- GitHub Actions build workflow
+Controls:
+- F3 — enable/disable flight
+- W/S — forward/back
+- A/D — lateral steering
+- Space — climb/takeoff
+- Ctrl — descend/land
+- Shift — boost
 
-No Superman abilities, physics, menu, SHVDN, NIBSHDotNet, or old source code are included yet.
+Physics:
+- manual gravity
+- acceleration/thrust
+- inertia
+- quadratic air drag
+- hover stabilization
+- speed limiting through velocity
+- camera-directed flight
+- velocity-based pitch/yaw
+- roll/lean while steering
 
-Build artifact:
-`bin/Superman.asi`
+No SHVDN, NIBSHDotNet, menu, models, sounds, or other abilities yet.

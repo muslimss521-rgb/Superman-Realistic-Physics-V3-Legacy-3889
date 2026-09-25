@@ -54,6 +54,7 @@
 
   <ItemGroup>
     <ClCompile Include="$(ProjectDir)src\main.cpp" />
+    <ClCompile Include="$(ProjectDir)src\Flight.cpp" />
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
