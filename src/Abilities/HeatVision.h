@@ -1,6 +1,9 @@
 #pragma once
-namespace HeatVision {
+
+namespace HeatVision
+{
     void Toggle();
+    void Disable();
     bool Active();
     void Update();
 }

@@ -20,10 +20,9 @@ namespace Flight
         g_boost = false;
 
         Ped ped = PLAYER::PLAYER_PED_ID();
-
         if (ENTITY::DOES_ENTITY_EXIST(ped))
         {
-            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, true);
+            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, TRUE);
             ENTITY::SET_ENTITY_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
         }
     }
@@ -44,18 +43,14 @@ namespace Flight
             return;
 
         Ped ped = PLAYER::PLAYER_PED_ID();
-
         if (!ENTITY::DOES_ENTITY_EXIST(ped))
             return;
 
-        // The SDK used by this project does not expose
-        // GET_GAMEPLAY_CAM_FORWARD_VECTOR / RIGHT_VECTOR.
-        // Calculate both vectors from the available camera rotation native.
         Vector3 rot = CAM::GET_GAMEPLAY_CAM_ROT(2);
 
-        const float degToRad = 0.017453292519943295769f;
-        const float pitch = rot.x * degToRad;
-        const float yaw   = rot.z * degToRad;
+        const float d2r = 0.01745329251994329577f;
+        const float pitch = rot.x * d2r;
+        const float yaw   = rot.z * d2r;
 
         const float cp = std::cos(pitch);
         const float sp = std::sin(pitch);
@@ -72,45 +67,48 @@ namespace Flight
         right.y = sy;
         right.z = 0.0f;
 
-        const float speed = g_boost ? 3.5f : 1.0f;
+        const float speed = g_boost ? 4.0f : 1.25f;
 
-        float x = 0.0f;
-        float y = 0.0f;
-        float z = 0.0f;
+        float vx = 0.0f;
+        float vy = 0.0f;
+        float vz = 0.0f;
 
         if (Input::Forward())
         {
-            x += forward.x * speed;
-            y += forward.y * speed;
-            z += forward.z * speed;
+            vx += forward.x * speed;
+            vy += forward.y * speed;
+            vz += forward.z * speed;
         }
 
         if (Input::Back())
         {
-            x -= forward.x * speed;
-            y -= forward.y * speed;
-            z -= forward.z * speed;
+            vx -= forward.x * speed;
+            vy -= forward.y * speed;
+            vz -= forward.z * speed;
         }
 
         if (Input::Left())
         {
-            x -= right.x * speed;
-            y -= right.y * speed;
+            vx -= right.x * speed;
+            vy -= right.y * speed;
         }
 
         if (Input::Right())
         {
-            x += right.x * speed;
-            y += right.y * speed;
+            vx += right.x * speed;
+            vy += right.y * speed;
         }
 
         if (Input::Up())
-            z += speed;
+            vz += speed;
 
         if (Input::Down())
-            z -= speed;
+            vz -= speed;
 
-        ENTITY::SET_ENTITY_HAS_GRAVITY(ped, false);
-        ENTITY::SET_ENTITY_VELOCITY(ped, x, y, z);
+        ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
+        ENTITY::SET_ENTITY_VELOCITY(ped, vx, vy, vz);
+
+        // Turn the character toward the camera while flying.
+        ENTITY::SET_ENTITY_HEADING(ped, rot.z);
     }
 }
