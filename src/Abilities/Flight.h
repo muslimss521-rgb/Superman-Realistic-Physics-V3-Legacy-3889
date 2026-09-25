@@ -1,5 +1,7 @@
 #pragma once
-namespace Flight {
+
+namespace Flight
+{
     void Enable();
     void Disable();
     void SetBoost(bool enabled);
