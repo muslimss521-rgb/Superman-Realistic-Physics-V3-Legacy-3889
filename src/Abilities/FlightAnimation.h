@@ -3,15 +3,7 @@
 namespace FlightAnimation
 {
     void Initialize();
+    void Update(bool flying, bool boosting);
+    void Stop();
     void Shutdown();
-
-    void Update(
-        bool flying,
-        bool boosting,
-        bool forward,
-        bool back,
-        bool left,
-        bool right,
-        bool up,
-        bool down);
 }

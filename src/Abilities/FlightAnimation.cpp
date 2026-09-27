@@ -1,114 +1,79 @@
 #include "FlightAnimation.h"
-#include "main.h"
-#include "natives.h"
+#include "../Input.h"
+#include "../../include/ScriptHookV/natives.h"
 
 namespace FlightAnimation
 {
-    // Verified GTA V freefall dictionary.
+    static bool g_playing = false;
     static const char* kDict = "skydive@freefall";
     static const char* kAnim = "free_forward";
 
-    static bool g_loaded = false;
-    static bool g_playing = false;
-
-    static char* M(const char* s)
-    {
-        return const_cast<char*>(s);
-    }
-
-    static void Request()
-    {
-        if (g_loaded)
-            return;
-
-        STREAMING::REQUEST_ANIM_DICT(M(kDict));
-        if (STREAMING::HAS_ANIM_DICT_LOADED(M(kDict)))
-            g_loaded = true;
-    }
-
     void Initialize()
     {
-        g_loaded = false;
         g_playing = false;
-        Request();
     }
 
-    void Shutdown()
+    static void EnsureLoaded()
     {
-        Ped ped = PLAYER::PLAYER_PED_ID();
-
-        if (ENTITY::DOES_ENTITY_EXIST(ped) && g_playing)
-        {
-            AI::STOP_ANIM_TASK(ped, M(kDict), M(kAnim), 2.0f);
-        }
-
-        g_playing = false;
-
-        if (g_loaded)
-            STREAMING::REMOVE_ANIM_DICT(M(kDict));
-
-        g_loaded = false;
+        if (!STREAMING::HAS_ANIM_DICT_LOADED(kDict))
+            STREAMING::REQUEST_ANIM_DICT(kDict);
     }
 
-    void Update(
-        bool flying,
-        bool boosting,
-        bool forward,
-        bool back,
-        bool left,
-        bool right,
-        bool up,
-        bool down)
+    void Update(bool flying, bool boosting)
     {
         Ped ped = PLAYER::PLAYER_PED_ID();
-        if (!ENTITY::DOES_ENTITY_EXIST(ped))
-            return;
 
         if (!flying)
         {
             if (g_playing)
-            {
-                AI::STOP_ANIM_TASK(ped, M(kDict), M(kAnim), 2.0f);
-                g_playing = false;
-            }
-
-            PED::SET_PED_CAN_RAGDOLL(ped, TRUE);
+                AI::STOP_ANIM_TASK(ped, kDict, kAnim, -4.0f);
+            g_playing = false;
+            PED::SET_PED_CAN_RAGDOLL(ped, true);
             return;
         }
 
-        Request();
-        if (!g_loaded)
+        EnsureLoaded();
+
+        if (!STREAMING::HAS_ANIM_DICT_LOADED(kDict))
             return;
 
-        PED::SET_PED_CAN_RAGDOLL(ped, FALSE);
+        PED::SET_PED_CAN_RAGDOLL(ped, false);
 
-        if (!g_playing ||
-            !ENTITY::IS_ENTITY_PLAYING_ANIM(ped, M(kDict), M(kAnim), 3))
+        // Reapply only when needed so the animation does not restart every frame.
+        if (!g_playing)
         {
-            // Loop + controllable full-body animation.
-            const int flags = 1 | 32 | 64;
             AI::TASK_PLAY_ANIM(
                 ped,
-                M(kDict),
-                M(kAnim),
+                kDict,
+                kAnim,
                 8.0f,
                 -8.0f,
                 -1,
-                flags,
-                boosting ? 1.20f : 1.0f,
-                FALSE,
-                FALSE,
-                FALSE);
-
+                1 | 32 | 64,
+                1.0f,
+                false,
+                false,
+                false
+            );
             g_playing = true;
         }
-        else
-        {
-            ENTITY::SET_ENTITY_ANIM_SPEED(
-                ped,
-                M(kDict),
-                M(kAnim),
-                boosting ? 1.20f : 1.0f);
-        }
+
+        // Boost gives a slightly stronger forward-flight animation speed.
+        AI::SET_ANIM_RATE(ped, kDict, kAnim, boosting ? 1.35f : 1.0f);
+    }
+
+    void Stop()
+    {
+        Ped ped = PLAYER::PLAYER_PED_ID();
+        if (g_playing)
+            AI::STOP_ANIM_TASK(ped, kDict, kAnim, -4.0f);
+
+        g_playing = false;
+        PED::SET_PED_CAN_RAGDOLL(ped, true);
+    }
+
+    void Shutdown()
+    {
+        Stop();
     }
 }
