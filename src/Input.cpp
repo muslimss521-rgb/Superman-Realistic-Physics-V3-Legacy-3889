@@ -16,6 +16,7 @@ namespace Input
     bool JustPressed(int key)
     {
         static bool previous[256] = {};
+
         if (key < 0 || key > 255)
             return false;
 
@@ -33,11 +34,24 @@ namespace Input
     bool Down()    { return KeyDown(VK_LCONTROL) || KeyDown(VK_RCONTROL); }
     bool Boost()   { return KeyDown(VK_LSHIFT) || KeyDown(VK_RSHIFT); }
 
-    bool ToggleSuperman()    { return JustPressed('G'); }
+    // F3 = master Superman ON/OFF.
+    bool ToggleSuperman()    { return JustPressed(VK_F3); }
+
+    // F = flight ON/OFF.
     bool ToggleFlight()      { return JustPressed('F'); }
+
+    // R = super punch.
     bool SuperPunch()        { return JustPressed('R'); }
+
+    // T = target lock.
     bool ToggleTargetLock()  { return JustPressed('T'); }
+
+    // X = emergency OFF.
     bool EmergencyOff()      { return JustPressed('X'); }
+
+    // H = heat vision.
     bool ToggleHeatVision()  { return JustPressed('H'); }
+
+    // C = super speed.
     bool ToggleSuperSpeed()  { return JustPressed('C'); }
 }
