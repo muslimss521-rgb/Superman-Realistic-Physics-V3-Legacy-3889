@@ -1,79 +1,120 @@
 #include "FlightAnimation.h"
-#include "../Input.h"
-#include "../../include/ScriptHookV/natives.h"
+#include "main.h"
 
 namespace FlightAnimation
 {
+    // GTA V built-in flight/freefall animation.
+    // Mutable char buffers are required by this ScriptHookV SDK.
+    static char kDict[] = "skydive@freefall";
+    static char kIdle[] = "free_forward";
+
+    static bool g_loaded = false;
     static bool g_playing = false;
-    static const char* kDict = "skydive@freefall";
-    static const char* kAnim = "free_forward";
+
+    static void RequestAnim()
+    {
+        if (!g_loaded)
+        {
+            STREAMING::REQUEST_ANIM_DICT(kDict);
+
+            if (STREAMING::HAS_ANIM_DICT_LOADED(kDict))
+                g_loaded = true;
+        }
+    }
+
+    static void StopCurrent(Ped ped)
+    {
+        if (g_playing)
+        {
+            AI::STOP_ANIM_TASK(
+                ped,
+                kDict,
+                kIdle,
+                2.0f);
+
+            g_playing = false;
+        }
+    }
+
+    static void PlayFlight(Ped ped, bool boosting)
+    {
+        if (!g_loaded)
+            return;
+
+        if (!g_playing)
+        {
+            AI::TASK_PLAY_ANIM(
+                ped,
+                kDict,
+                kIdle,
+                8.0f,
+                -8.0f,
+                -1,
+                1 | 2 | 16 | 32,
+                0.0f,
+                FALSE,
+                FALSE,
+                FALSE);
+
+            g_playing = true;
+        }
+
+        // Use the native that actually exists in this SDK.
+        ENTITY::SET_ENTITY_ANIM_SPEED(
+            ped,
+            kDict,
+            kIdle,
+            boosting ? 1.35f : 1.0f);
+    }
 
     void Initialize()
     {
+        g_loaded = false;
         g_playing = false;
-    }
-
-    static void EnsureLoaded()
-    {
-        if (!STREAMING::HAS_ANIM_DICT_LOADED(kDict))
-            STREAMING::REQUEST_ANIM_DICT(kDict);
+        RequestAnim();
     }
 
     void Update(bool flying, bool boosting)
     {
         Ped ped = PLAYER::PLAYER_PED_ID();
 
+        if (!ENTITY::DOES_ENTITY_EXIST(ped))
+            return;
+
         if (!flying)
         {
-            if (g_playing)
-                AI::STOP_ANIM_TASK(ped, kDict, kAnim, -4.0f);
-            g_playing = false;
+            StopCurrent(ped);
             PED::SET_PED_CAN_RAGDOLL(ped, true);
             return;
         }
 
-        EnsureLoaded();
+        RequestAnim();
 
-        if (!STREAMING::HAS_ANIM_DICT_LOADED(kDict))
+        if (!g_loaded)
             return;
 
         PED::SET_PED_CAN_RAGDOLL(ped, false);
-
-        // Reapply only when needed so the animation does not restart every frame.
-        if (!g_playing)
-        {
-            AI::TASK_PLAY_ANIM(
-                ped,
-                kDict,
-                kAnim,
-                8.0f,
-                -8.0f,
-                -1,
-                1 | 32 | 64,
-                1.0f,
-                false,
-                false,
-                false
-            );
-            g_playing = true;
-        }
-
-        // Boost gives a slightly stronger forward-flight animation speed.
-        AI::SET_ANIM_RATE(ped, kDict, kAnim, boosting ? 1.35f : 1.0f);
+        PlayFlight(ped, boosting);
     }
 
     void Stop()
     {
         Ped ped = PLAYER::PLAYER_PED_ID();
-        if (g_playing)
-            AI::STOP_ANIM_TASK(ped, kDict, kAnim, -4.0f);
 
-        g_playing = false;
-        PED::SET_PED_CAN_RAGDOLL(ped, true);
+        if (ENTITY::DOES_ENTITY_EXIST(ped))
+        {
+            StopCurrent(ped);
+            PED::SET_PED_CAN_RAGDOLL(ped, true);
+        }
     }
 
     void Shutdown()
     {
         Stop();
+
+        if (g_loaded)
+            STREAMING::REMOVE_ANIM_DICT(kDict);
+
+        g_loaded = false;
     }
 }
