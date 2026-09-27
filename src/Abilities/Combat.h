@@ -1,7 +1,5 @@
 #pragma once
-
-namespace Combat
-{
+namespace Combat {
     void SuperPunch();
     void Update();
 }
