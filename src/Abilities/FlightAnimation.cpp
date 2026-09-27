@@ -1,10 +1,10 @@
 #include "FlightAnimation.h"
-#include "main.h"
+#include "natives.h"
 
 namespace FlightAnimation
 {
     // GTA V built-in flight/freefall animation.
-    // Mutable char buffers are required by this ScriptHookV SDK.
+    // ScriptHookV natives in this project use mutable char* strings.
     static char kDict[] = "skydive@freefall";
     static char kIdle[] = "free_forward";
 
@@ -24,16 +24,17 @@ namespace FlightAnimation
 
     static void StopCurrent(Ped ped)
     {
-        if (g_playing)
-        {
-            AI::STOP_ANIM_TASK(
-                ped,
-                kDict,
-                kIdle,
-                2.0f);
+        if (!g_playing)
+            return;
 
-            g_playing = false;
-        }
+        AI::STOP_ANIM_TASK(
+            ped,
+            kDict,
+            kIdle,
+            2.0f
+        );
+
+        g_playing = false;
     }
 
     static void PlayFlight(Ped ped, bool boosting)
@@ -54,17 +55,18 @@ namespace FlightAnimation
                 0.0f,
                 FALSE,
                 FALSE,
-                FALSE);
+                FALSE
+            );
 
             g_playing = true;
         }
 
-        // Use the native that actually exists in this SDK.
         ENTITY::SET_ENTITY_ANIM_SPEED(
             ped,
             kDict,
             kIdle,
-            boosting ? 1.35f : 1.0f);
+            boosting ? 1.35f : 1.0f
+        );
     }
 
     void Initialize()
@@ -84,7 +86,7 @@ namespace FlightAnimation
         if (!flying)
         {
             StopCurrent(ped);
-            PED::SET_PED_CAN_RAGDOLL(ped, true);
+            PED::SET_PED_CAN_RAGDOLL(ped, TRUE);
             return;
         }
 
@@ -93,7 +95,7 @@ namespace FlightAnimation
         if (!g_loaded)
             return;
 
-        PED::SET_PED_CAN_RAGDOLL(ped, false);
+        PED::SET_PED_CAN_RAGDOLL(ped, FALSE);
         PlayFlight(ped, boosting);
     }
 
@@ -104,7 +106,7 @@ namespace FlightAnimation
         if (ENTITY::DOES_ENTITY_EXIST(ped))
         {
             StopCurrent(ped);
-            PED::SET_PED_CAN_RAGDOLL(ped, true);
+            PED::SET_PED_CAN_RAGDOLL(ped, TRUE);
         }
     }
 
@@ -116,5 +118,6 @@ namespace FlightAnimation
             STREAMING::REMOVE_ANIM_DICT(kDict);
 
         g_loaded = false;
+        g_playing = false;
     }
 }
