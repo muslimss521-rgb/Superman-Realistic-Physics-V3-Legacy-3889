@@ -1,159 +1,271 @@
-#include "Flight.h"
-#include "../Input.h"
-#include "main.h"
+#include "FlightAnimation.h"
 #include "natives.h"
-#include <cmath>
 
-namespace Flight
+namespace FlightAnimation
 {
-    static bool g_flying = false;
-    static bool g_boost = false;
+    // The real JulioNIB V2.1 video uses custom flight animation dictionaries.
+    // We do NOT require NIBSHDotNet here. If those custom dictionaries are not
+    // installed, the code falls back to GTA V built-in animations.
 
-    // Smoothed flight velocity. This avoids the "instant stop / instant start" feel.
-    static float g_vx = 0.0f;
-    static float g_vy = 0.0f;
-    static float g_vz = 0.0f;
+    static char kCustomIdleDict[]  = "export@nib@super@basicflight_idle";
+    static char kCustomIdleClip[]  = "basicflight_idle";
 
-    static float MoveToward(float current, float target, float amount)
+    static char kCustomFlightDict[] = "export@nib@super@basicflight";
+    static char kCustomFlightClip[] = "basicflight";
+
+    // Built-in fallbacks:
+    // Hover: arms-up standing pose while gravity is disabled.
+    static char kHoverDict[] = "amb@world_human_cheering@male_a";
+    static char kHoverClip[] = "base";
+
+    // Flight: actual airborne pose.
+    static char kFlightDict[] = "skydive@freefall";
+    static char kFlightClip[] = "free_forward";
+
+    static bool g_hoverLoaded = false;
+    static bool g_flightLoaded = false;
+    static bool g_customIdleLoaded = false;
+    static bool g_customFlightLoaded = false;
+
+    enum AnimState
     {
-        if (current < target)
-        {
-            current += amount;
-            if (current > target) current = target;
-        }
-        else if (current > target)
-        {
-            current -= amount;
-            if (current < target) current = target;
-        }
-        return current;
-    }
+        STATE_NONE = 0,
+        STATE_HOVER,
+        STATE_FLIGHT
+    };
 
-    void Enable()
+    static AnimState g_state = STATE_NONE;
+
+    static void Request(char* dict, bool& loaded)
     {
-        g_flying = true;
-        g_boost = false;
-        g_vx = g_vy = g_vz = 0.0f;
-
-        Ped ped = PLAYER::PLAYER_PED_ID();
-
-        if (ENTITY::DOES_ENTITY_EXIST(ped))
-        {
-            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
-            ENTITY::SET_ENTITY_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
-        }
-    }
-
-    void Disable()
-    {
-        g_flying = false;
-        g_boost = false;
-        g_vx = g_vy = g_vz = 0.0f;
-
-        Ped ped = PLAYER::PLAYER_PED_ID();
-
-        if (ENTITY::DOES_ENTITY_EXIST(ped))
-        {
-            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, TRUE);
-            ENTITY::SET_ENTITY_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
-        }
-    }
-
-    void SetBoost(bool enabled)
-    {
-        g_boost = enabled;
-    }
-
-    bool IsEnabled()
-    {
-        return g_flying;
-    }
-
-    void Update()
-    {
-        if (!g_flying)
+        if (loaded)
             return;
 
+        STREAMING::REQUEST_ANIM_DICT(dict);
+
+        if (STREAMING::HAS_ANIM_DICT_LOADED(dict))
+            loaded = true;
+    }
+
+    static void StopAnimation(Ped ped)
+    {
+        if (g_state == STATE_NONE)
+            return;
+
+        if (g_state == STATE_HOVER)
+        {
+            if (g_customIdleLoaded)
+                AI::STOP_ANIM_TASK(ped, kCustomIdleDict, kCustomIdleClip, 1.5f);
+            if (g_hoverLoaded)
+                AI::STOP_ANIM_TASK(ped, kHoverDict, kHoverClip, 1.5f);
+        }
+        else if (g_state == STATE_FLIGHT)
+        {
+            if (g_customFlightLoaded)
+                AI::STOP_ANIM_TASK(ped, kCustomFlightDict, kCustomFlightClip, 1.5f);
+            if (g_flightLoaded)
+                AI::STOP_ANIM_TASK(ped, kFlightDict, kFlightClip, 1.5f);
+        }
+
+        g_state = STATE_NONE;
+    }
+
+    static void PlayHover(Ped ped)
+    {
+        if (g_state == STATE_HOVER)
+            return;
+
+        StopAnimation(ped);
+
+        // Prefer the custom Superman hover if it happens to be installed.
+        if (g_customIdleLoaded)
+        {
+            AI::TASK_PLAY_ANIM(
+                ped,
+                kCustomIdleDict,
+                kCustomIdleClip,
+                6.0f,
+                -6.0f,
+                -1,
+                1 | 2 | 4 | 16,
+                1.0f,
+                FALSE,
+                FALSE,
+                FALSE
+            );
+
+            g_state = STATE_HOVER;
+            return;
+        }
+
+        // Built-in approximation of the video:
+        // upright floating body + arms raised, with gravity disabled.
+        if (g_hoverLoaded)
+        {
+            AI::TASK_PLAY_ANIM(
+                ped,
+                kHoverDict,
+                kHoverClip,
+                6.0f,
+                -6.0f,
+                -1,
+                1 | 2 | 4 | 16,
+                1.0f,
+                FALSE,
+                FALSE,
+                FALSE
+            );
+
+            g_state = STATE_HOVER;
+        }
+    }
+
+    static void PlayFlight(Ped ped, bool boosting)
+    {
+        if (g_state == STATE_FLIGHT)
+        {
+            ENTITY::SET_ENTITY_ANIM_SPEED(
+                ped,
+                g_customFlightLoaded ? kCustomFlightDict : kFlightDict,
+                g_customFlightLoaded ? kCustomFlightClip : kFlightClip,
+                boosting ? 1.55f : 1.15f
+            );
+            return;
+        }
+
+        StopAnimation(ped);
+
+        // Prefer the custom Superman fast-flight animation if installed.
+        if (g_customFlightLoaded)
+        {
+            AI::TASK_PLAY_ANIM(
+                ped,
+                kCustomFlightDict,
+                kCustomFlightClip,
+                5.0f,
+                -5.0f,
+                -1,
+                1 | 2 | 4 | 16,
+                1.0f,
+                FALSE,
+                FALSE,
+                FALSE
+            );
+
+            g_state = STATE_FLIGHT;
+
+            ENTITY::SET_ENTITY_ANIM_SPEED(
+                ped,
+                kCustomFlightDict,
+                kCustomFlightClip,
+                boosting ? 1.55f : 1.15f
+            );
+            return;
+        }
+
+        if (g_flightLoaded)
+        {
+            AI::TASK_PLAY_ANIM(
+                ped,
+                kFlightDict,
+                kFlightClip,
+                5.0f,
+                -5.0f,
+                -1,
+                1 | 2 | 4 | 16,
+                1.0f,
+                FALSE,
+                FALSE,
+                FALSE
+            );
+
+            g_state = STATE_FLIGHT;
+
+            ENTITY::SET_ENTITY_ANIM_SPEED(
+                ped,
+                kFlightDict,
+                kFlightClip,
+                boosting ? 1.55f : 1.15f
+            );
+        }
+    }
+
+    void Initialize()
+    {
+        g_hoverLoaded = false;
+        g_flightLoaded = false;
+        g_customIdleLoaded = false;
+        g_customFlightLoaded = false;
+        g_state = STATE_NONE;
+
+        // Try both custom dictionaries first. Failure is harmless.
+        Request(kCustomIdleDict, g_customIdleLoaded);
+        Request(kCustomFlightDict, g_customFlightLoaded);
+
+        // Always prepare built-in fallbacks.
+        Request(kHoverDict, g_hoverLoaded);
+        Request(kFlightDict, g_flightLoaded);
+    }
+
+    void Update(bool flying, bool boosting)
+    {
         Ped ped = PLAYER::PLAYER_PED_ID();
 
         if (!ENTITY::DOES_ENTITY_EXIST(ped))
             return;
 
-        Vector3 camRot = CAM::GET_GAMEPLAY_CAM_ROT(2);
-
-        const float d2r = 0.01745329251994329577f;
-        const float pitch = camRot.x * d2r;
-        const float yaw   = camRot.z * d2r;
-
-        const float cp = std::cos(pitch);
-        const float sp = std::sin(pitch);
-        const float cy = std::cos(yaw);
-        const float sy = std::sin(yaw);
-
-        // Camera forward vector: W/S follow exactly where the camera looks.
-        Vector3 forward;
-        forward.x = -sy * cp;
-        forward.y =  cy * cp;
-        forward.z =  sp;
-
-        // Horizontal right vector.
-        Vector3 right;
-        right.x = cy;
-        right.y = sy;
-        right.z = 0.0f;
-
-        const float maxSpeed = g_boost ? 75.0f : 22.0f;
-        const float verticalSpeed = g_boost ? 50.0f : 14.0f;
-
-        float targetX = 0.0f;
-        float targetY = 0.0f;
-        float targetZ = 0.0f;
-
-        if (Input::Forward())
+        if (!flying)
         {
-            targetX += forward.x * maxSpeed;
-            targetY += forward.y * maxSpeed;
-            targetZ += forward.z * maxSpeed;
+            StopAnimation(ped);
+            return;
         }
 
-        if (Input::Back())
-        {
-            targetX -= forward.x * maxSpeed;
-            targetY -= forward.y * maxSpeed;
-            targetZ -= forward.z * maxSpeed;
-        }
+        // Try loading dictionaries again because the first request can finish
+        // after Initialize().
+        Request(kCustomIdleDict, g_customIdleLoaded);
+        Request(kCustomFlightDict, g_customFlightLoaded);
+        Request(kHoverDict, g_hoverLoaded);
+        Request(kFlightDict, g_flightLoaded);
 
-        if (Input::Left())
-        {
-            targetX -= right.x * maxSpeed;
-            targetY -= right.y * maxSpeed;
-        }
+        // Determine state from actual movement.
+        // Boost forces the fast-flight pose immediately.
+        const float speed = ENTITY::GET_ENTITY_SPEED(ped);
+        const bool fastFlight = boosting || speed > 4.0f;
 
-        if (Input::Right())
-        {
-            targetX += right.x * maxSpeed;
-            targetY += right.y * maxSpeed;
-        }
+        if (fastFlight)
+            PlayFlight(ped, boosting);
+        else
+            PlayHover(ped);
+    }
 
-        if (Input::Up())
-            targetZ += verticalSpeed;
+    void Stop()
+    {
+        Ped ped = PLAYER::PLAYER_PED_ID();
 
-        if (Input::Down())
-            targetZ -= verticalSpeed;
+        if (ENTITY::DOES_ENTITY_EXIST(ped))
+            StopAnimation(ped);
+    }
 
-        // Smooth acceleration/deceleration.
-        const float acceleration = g_boost ? 8.0f : 4.0f;
+    void Shutdown()
+    {
+        Stop();
 
-        g_vx = MoveToward(g_vx, targetX, acceleration);
-        g_vy = MoveToward(g_vy, targetY, acceleration);
-        g_vz = MoveToward(g_vz, targetZ, acceleration);
+        if (g_customIdleLoaded)
+            STREAMING::REMOVE_ANIM_DICT(kCustomIdleDict);
 
-        ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
-        ENTITY::SET_ENTITY_VELOCITY(ped, g_vx, g_vy, g_vz);
+        if (g_customFlightLoaded)
+            STREAMING::REMOVE_ANIM_DICT(kCustomFlightDict);
 
-        // Keep the character facing the camera horizontally.
-        // Do NOT use SET_ENTITY_ANGULAR_VELOCITY here:
-        // that native is not present in this ScriptHookV SDK.
-        ENTITY::SET_ENTITY_HEADING(ped, camRot.z);
+        if (g_hoverLoaded)
+            STREAMING::REMOVE_ANIM_DICT(kHoverDict);
+
+        if (g_flightLoaded)
+            STREAMING::REMOVE_ANIM_DICT(kFlightDict);
+
+        g_customIdleLoaded = false;
+        g_customFlightLoaded = false;
+        g_hoverLoaded = false;
+        g_flightLoaded = false;
+        g_state = STATE_NONE;
     }
 }
