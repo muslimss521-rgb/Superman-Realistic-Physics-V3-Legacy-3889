@@ -9,16 +9,12 @@ namespace Flight
     static bool g_flying = false;
     static bool g_boost = false;
 
+    // Smoothed flight velocity. This avoids the "instant stop / instant start" feel.
     static float g_vx = 0.0f;
     static float g_vy = 0.0f;
     static float g_vz = 0.0f;
 
-    static float Clamp(float v, float minV, float maxV)
-    {
-        return v < minV ? minV : (v > maxV ? maxV : v);
-    }
-
-    static float Approach(float current, float target, float amount)
+    static float MoveToward(float current, float target, float amount)
     {
         if (current < target)
         {
@@ -40,6 +36,7 @@ namespace Flight
         g_vx = g_vy = g_vz = 0.0f;
 
         Ped ped = PLAYER::PLAYER_PED_ID();
+
         if (ENTITY::DOES_ENTITY_EXIST(ped))
         {
             ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
@@ -54,6 +51,7 @@ namespace Flight
         g_vx = g_vy = g_vz = 0.0f;
 
         Ped ped = PLAYER::PLAYER_PED_ID();
+
         if (ENTITY::DOES_ENTITY_EXIST(ped))
         {
             ENTITY::SET_ENTITY_HAS_GRAVITY(ped, TRUE);
@@ -77,6 +75,7 @@ namespace Flight
             return;
 
         Ped ped = PLAYER::PLAYER_PED_ID();
+
         if (!ENTITY::DOES_ENTITY_EXIST(ped))
             return;
 
@@ -84,100 +83,77 @@ namespace Flight
 
         const float d2r = 0.01745329251994329577f;
         const float pitch = camRot.x * d2r;
-        const float yaw = camRot.z * d2r;
+        const float yaw   = camRot.z * d2r;
 
         const float cp = std::cos(pitch);
         const float sp = std::sin(pitch);
         const float cy = std::cos(yaw);
         const float sy = std::sin(yaw);
 
+        // Camera forward vector: W/S follow exactly where the camera looks.
         Vector3 forward;
         forward.x = -sy * cp;
         forward.y =  cy * cp;
         forward.z =  sp;
 
+        // Horizontal right vector.
         Vector3 right;
         right.x = cy;
         right.y = sy;
         right.z = 0.0f;
 
-        const bool forwardKey = Input::Forward();
-        const bool backKey = Input::Back();
-        const bool leftKey = Input::Left();
-        const bool rightKey = Input::Right();
-        const bool upKey = Input::Up();
-        const bool downKey = Input::Down();
+        const float maxSpeed = g_boost ? 75.0f : 22.0f;
+        const float verticalSpeed = g_boost ? 50.0f : 14.0f;
 
-        float ix = 0.0f;
-        float iy = 0.0f;
-        float iz = 0.0f;
+        float targetX = 0.0f;
+        float targetY = 0.0f;
+        float targetZ = 0.0f;
 
-        if (forwardKey)
+        if (Input::Forward())
         {
-            ix += forward.x;
-            iy += forward.y;
-            iz += forward.z;
+            targetX += forward.x * maxSpeed;
+            targetY += forward.y * maxSpeed;
+            targetZ += forward.z * maxSpeed;
         }
 
-        if (backKey)
+        if (Input::Back())
         {
-            ix -= forward.x;
-            iy -= forward.y;
-            iz -= forward.z;
+            targetX -= forward.x * maxSpeed;
+            targetY -= forward.y * maxSpeed;
+            targetZ -= forward.z * maxSpeed;
         }
 
-        if (leftKey)
+        if (Input::Left())
         {
-            ix -= right.x;
-            iy -= right.y;
+            targetX -= right.x * maxSpeed;
+            targetY -= right.y * maxSpeed;
         }
 
-        if (rightKey)
+        if (Input::Right())
         {
-            ix += right.x;
-            iy += right.y;
+            targetX += right.x * maxSpeed;
+            targetY += right.y * maxSpeed;
         }
 
-        if (upKey)   iz += 1.0f;
-        if (downKey) iz -= 1.0f;
+        if (Input::Up())
+            targetZ += verticalSpeed;
 
-        const float inputLen = std::sqrt(ix * ix + iy * iy + iz * iz);
-        if (inputLen > 1.0f)
-        {
-            ix /= inputLen;
-            iy /= inputLen;
-            iz /= inputLen;
-        }
+        if (Input::Down())
+            targetZ -= verticalSpeed;
 
-        const float maxSpeed = g_boost ? 95.0f : 28.0f;
-        const float acceleration = g_boost ? 8.5f : 4.5f;
-        const float braking = g_boost ? 5.5f : 3.5f;
+        // Smooth acceleration/deceleration.
+        const float acceleration = g_boost ? 8.0f : 4.0f;
 
-        const float targetX = ix * maxSpeed;
-        const float targetY = iy * maxSpeed;
-        const float targetZ = iz * (g_boost ? 65.0f : 22.0f);
-
-        const float step = (inputLen > 0.01f) ? acceleration : braking;
-
-        g_vx = Approach(g_vx, targetX, step);
-        g_vy = Approach(g_vy, targetY, step);
-        g_vz = Approach(g_vz, targetZ, step);
-
-        // No keys = stable hover. Gradually brake instead of snapping.
-        if (inputLen <= 0.01f)
-        {
-            g_vx = Approach(g_vx, 0.0f, braking);
-            g_vy = Approach(g_vy, 0.0f, braking);
-            g_vz = Approach(g_vz, 0.0f, braking);
-        }
+        g_vx = MoveToward(g_vx, targetX, acceleration);
+        g_vy = MoveToward(g_vy, targetY, acceleration);
+        g_vz = MoveToward(g_vz, targetZ, acceleration);
 
         ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
         ENTITY::SET_ENTITY_VELOCITY(ped, g_vx, g_vy, g_vz);
 
-        // Face horizontally toward the camera.
+        // Keep the character facing the camera horizontally.
+        // Do NOT use SET_ENTITY_ANGULAR_VELOCITY here:
+        // that native is not present in this ScriptHookV SDK.
         ENTITY::SET_ENTITY_HEADING(ped, camRot.z);
-
-        // Keep the ped physically stable while airborne.
-        ENTITY::SET_ENTITY_ANGULAR_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
     }
 }
