@@ -12,6 +12,14 @@ namespace Flight
     void Enable()
     {
         g_flying = true;
+        g_boost = false;
+
+        Ped ped = PLAYER::PLAYER_PED_ID();
+        if (ENTITY::DOES_ENTITY_EXIST(ped))
+        {
+            ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
+            ENTITY::SET_ENTITY_VELOCITY(ped, 0.0f, 0.0f, 0.0f);
+        }
     }
 
     void Disable()
@@ -50,7 +58,7 @@ namespace Flight
 
         const float d2r = 0.01745329251994329577f;
         const float pitch = rot.x * d2r;
-        const float yaw   = rot.z * d2r;
+        const float yaw = rot.z * d2r;
 
         const float cp = std::cos(pitch);
         const float sp = std::sin(pitch);
@@ -59,15 +67,18 @@ namespace Flight
 
         Vector3 forward;
         forward.x = -sy * cp;
-        forward.y =  cy * cp;
-        forward.z =  sp;
+        forward.y = cy * cp;
+        forward.z = sp;
 
         Vector3 right;
         right.x = cy;
         right.y = sy;
         right.z = 0.0f;
 
-        const float speed = g_boost ? 4.0f : 1.25f;
+        // No automatic forward flight.
+        // The character stays in place until a movement key is held.
+        const float speed = g_boost ? 70.0f : 18.0f;
+        const float verticalSpeed = g_boost ? 45.0f : 12.0f;
 
         float vx = 0.0f;
         float vy = 0.0f;
@@ -100,15 +111,15 @@ namespace Flight
         }
 
         if (Input::Up())
-            vz += speed;
+            vz += verticalSpeed;
 
         if (Input::Down())
-            vz -= speed;
+            vz -= verticalSpeed;
 
         ENTITY::SET_ENTITY_HAS_GRAVITY(ped, FALSE);
         ENTITY::SET_ENTITY_VELOCITY(ped, vx, vy, vz);
 
-        // Turn the character toward the camera while flying.
+        // Face the same horizontal direction as the camera.
         ENTITY::SET_ENTITY_HEADING(ped, rot.z);
     }
 }
