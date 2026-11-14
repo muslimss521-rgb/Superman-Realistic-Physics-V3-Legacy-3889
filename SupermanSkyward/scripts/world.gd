@@ -89,7 +89,7 @@ func _build_city() -> void:
             if abs(x) <= 1 and abs(z) <= 1:
                 _park(cx, cz)
             else:
-                _building(cx, cz, rng.randf_range(17, 65), (x * 7 + z * 3) % facade_materials.size())
+                _building(cx, cz, rng.randf_range(17, 65), posmod(x * 7 + z * 3, facade_materials.size()))
     for i in range(-3, 4):
         _street_light(float(i) * ROAD_STEP + 7, 8)
         _street_light(8, float(i) * ROAD_STEP + 7)
@@ -101,8 +101,8 @@ func _building(cx: float, cz: float, height: float, material_index: int) -> void
     _block(Vector3(cx, height * 0.5 + 0.26, cz), Vector3(width, height, depth), material, true)
     _block(Vector3(cx, height + 0.42, cz), Vector3(width + 0.8, 0.55, depth + 0.8), _mat(Color("#353e48")))
     _block(Vector3(cx, 1.6, cz + depth * 0.5 + 0.025), Vector3(2.5, 2.9, 0.09), glass_material)
-    var floors := mini(int(height / 3.6), 16)
-    var columns := 4
+    var floors := mini(int(height / 3.6), 9)
+    var columns := 3
     for floor_idx in range(1, floors):
         var y := 2.3 + float(floor_idx) * 3.55
         for col in range(columns):
